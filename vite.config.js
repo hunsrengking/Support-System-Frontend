@@ -5,4 +5,18 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(),react()],
+  server:{
+    host: true,       // allows access from LAN IP
+    port: 5173, 
+    proxy:{
+      "/api": {
+        target: "http://192.168.100.149:8000", 
+        changeOrigin: true,
+      },
+      "/ping": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    }
+  }
 })
