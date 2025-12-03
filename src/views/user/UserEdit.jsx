@@ -1,4 +1,3 @@
-// src/views/settings/users/UserEdit.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axiosClient from "../../services/axiosClient";
@@ -18,19 +17,18 @@ const UserEdit = () => {
   });
 
   useEffect(() => {
+    const loadUser = async () => {
+      const res = await axiosClient.get(`/api/users/${id}`);
+      setFormData({
+        username: res.data.username,
+        email: res.data.email,
+        password : res.data.password,
+        role_id: res.data.role_id,
+        department_id: res.data.department_id,
+      });
+    };
     loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    const res = await axiosClient.get(`/api/users/${id}`);
-    setFormData({
-      username: res.data.username,
-      email: res.data.email,
-      password : res.data.password,
-      role_id: res.data.role_id,
-      dedepartment_id: res.data.department_id,
-    });
-  };
+  }, [id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

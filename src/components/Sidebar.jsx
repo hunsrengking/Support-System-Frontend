@@ -19,6 +19,7 @@ const Sidebar = ({ sidebarOpen }) => {
       <nav className="p-3 space-y-2">
         <Link
           to="/dashboard"
+          
           className="flex items-center p-2 rounded-lg hover:bg-slate-100"
         >
           <FontAwesomeIcon icon={faChartBar} className="mr-3" />

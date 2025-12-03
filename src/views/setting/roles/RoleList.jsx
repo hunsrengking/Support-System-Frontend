@@ -30,11 +30,11 @@ const RoleList = () => {
     loadRoles();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this role?")) return;
+  const handleDisable = async (id) => {
+    if (!window.confirm("Disable this role?")) return;
 
     try {
-      await axiosClient.delete(`/api/roles/${id}`);
+      await axiosClient.delete(`/api/role/${id}`);
       setRoles((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
       console.error("Delete role error:", err);
@@ -110,11 +110,11 @@ const RoleList = () => {
 
                         <button
                           type="button"
-                          onClick={() => handleDelete(role.id)}
+                          onClick={() => handleDisable(role.id)}
                           className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"
                         >
                           <FontAwesomeIcon icon={faTrash} />
-                          Delete
+                          Disable
                         </button>
                       </div>
                     </td>

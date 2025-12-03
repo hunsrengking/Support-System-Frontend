@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// keys stored in localStorage
 const AUTH_TOKEN_KEY = "app_auth_token";
 const AUTH_USER_KEY = "app_auth_user";
 
@@ -32,12 +31,10 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
-  // restore session from localStorage
   useEffect(() => {
     setLoading(false);
   }, []);
 
-  // 🔐 login
   const signIn = async (token, userData) => {
     setToken(token);
     setUser(userData);
@@ -58,8 +55,6 @@ export const AuthProvider = ({ children }) => {
 
     navigate("/login");
   };
-
-  // update user info
   const updateUser = (newUserData) => {
     setUser(newUserData);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUserData));
@@ -73,6 +68,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-// Hook to use auth
 export const useAuth = () => useContext(AuthContext);

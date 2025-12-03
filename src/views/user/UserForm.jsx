@@ -13,7 +13,7 @@ const UserForm = ({
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState({
     roles: true,
-    departments: true
+    departments: true,
   });
 
   const handleChange = (e) => {
@@ -28,7 +28,7 @@ const UserForm = ({
     } catch (err) {
       console.error("Error loading roles:", err);
     } finally {
-      setLoading(prev => ({ ...prev, roles: false }));
+      setLoading((prev) => ({ ...prev, roles: false }));
     }
   };
 
@@ -39,7 +39,7 @@ const UserForm = ({
     } catch (err) {
       console.error("Error loading departments:", err);
     } finally {
-      setLoading(prev => ({ ...prev, departments: false }));
+      setLoading((prev) => ({ ...prev, departments: false }));
     }
   };
 
@@ -118,7 +118,9 @@ const UserForm = ({
           <option value="">Select department</option>
           {departments.map((department) => (
             <option key={department.id} value={department.id}>
-              {department.name || department.department_name || department.title}
+              {department.name ||
+                department.department_name ||
+                department.title}
             </option>
           ))}
         </select>
