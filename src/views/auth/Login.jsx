@@ -28,10 +28,7 @@ const Login = () => {
 
       const data = response.data;
 
-      // 🔧 FIX 1: support both token and access_token
       const token = data.token || data.access_token;
-
-      // 🔧 FIX 2: use the same keys as AuthProvider ("app_auth_token", "app_auth_user")
       if (token) {
         localStorage.setItem("app_auth_token", token);
       }
@@ -40,7 +37,6 @@ const Login = () => {
         localStorage.setItem("app_auth_user", JSON.stringify(data.user));
       }
 
-      // keep your redirect style
       window.location.href = "/dashboard";
     } catch (err) {
       console.error("Login error:", err);
@@ -130,7 +126,6 @@ const Login = () => {
             </center>
           </form>
         </div>
-
         {/* Right Side */}
         <div className="login-right">
           <h1>{t("brand_text.title")}</h1>

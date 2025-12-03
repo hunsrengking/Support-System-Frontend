@@ -1,12 +1,9 @@
-// src/views/settings/roles/RoleCreate.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserShield,
-  faSave,
-  faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
 const RoleCreate = () => {
@@ -18,12 +15,11 @@ const RoleCreate = () => {
     e.preventDefault();
 
     try {
-      await axiosClient.post("/api/roles", {
+      await axiosClient.post("/api/role", {
         name: roleName,
         description,
       });
-
-      navigate("/settings/roles"); // redirect back to list
+      navigate("/settings/roles");
     } catch (error) {
       console.error("Create role error:", error);
     }
@@ -75,8 +71,7 @@ const RoleCreate = () => {
             type="submit"
             className="bg-blue-600 text-white px-4 py-2 rounded-xl shadow hover:bg-blue-700 flex items-center gap-2"
           >
-            <FontAwesomeIcon icon={faSave} />
-            Save Role
+            Save
           </button>
 
           <button
@@ -84,7 +79,6 @@ const RoleCreate = () => {
             onClick={() => navigate("/settings/roles")}
             className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 flex items-center gap-2"
           >
-            <FontAwesomeIcon icon={faArrowLeft} />
             Cancel
           </button>
         </div>

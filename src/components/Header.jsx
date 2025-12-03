@@ -9,11 +9,11 @@ import {
   faSignOutAlt,
 } from "@fortawesome/free-solid-svg-icons";
 
-const Header = ({ sidebarOpen, toggleSidebar }) => {
+const Header = ({ toggleSidebar }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
 
-  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const storedUser = JSON.parse(localStorage.getItem("app_auth_user"));
 
   const user = {
     name: storedUser?.username || storedUser?.name || "User",
@@ -26,7 +26,7 @@ const Header = ({ sidebarOpen, toggleSidebar }) => {
       await axiosClient.post("/api/logout").catch(() => {});
 
       localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      localStorage.removeItem("app_auth_user");
 
       navigate("/login");
     } catch (err) {
