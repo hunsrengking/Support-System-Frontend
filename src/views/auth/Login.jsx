@@ -6,7 +6,6 @@ import axiosClient from "../../services/axiosClient";
 
 const Login = () => {
   const { t, i18n } = useTranslation();
-
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,21 +22,26 @@ const Login = () => {
 
     try {
       const response = await axiosClient.post("/api/login", {
-        email, 
+        email,
         password,
       });
 
       const data = response.data;
 
-      if (data.token) {
-        localStorage.setItem("auth_token", data.token);
+      // 🔧 FIX 1: support both token and access_token
+      const token = data.token || data.access_token;
+
+      // 🔧 FIX 2: use the same keys as AuthProvider ("app_auth_token", "app_auth_user")
+      if (token) {
+        localStorage.setItem("app_auth_token", token);
       }
 
       if (data.user) {
-        localStorage.setItem("auth_user", JSON.stringify(data.user));
+        localStorage.setItem("app_auth_user", JSON.stringify(data.user));
       }
 
-      alert("Login Success!");
+      // keep your redirect style
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error("Login error:", err);
       if (err.response) {
@@ -53,19 +57,27 @@ const Login = () => {
   return (
     <div className="login-container">
       <div className="login-form">
-
         {/* Left Side */}
         <div className="login-left">
           <div className="language-selector">
             <label htmlFor="language">{t("change_language")}</label>
-            <select id="language" onChange={(e) => changeLanguage(e.target.value)}>
+            <select
+              id="language"
+              onChange={(e) => changeLanguage(e.target.value)}
+            >
               <option value="en">English</option>
               <option value="kh">Khmer</option>
             </select>
           </div>
 
           <center>
-            <img src={logo} alt="App Logo" width="150px" height="130px" className="img-fluid" />
+            <img
+              src={logo}
+              alt="App Logo"
+              width="150px"
+              height="130px"
+              className="img-fluid"
+            />
           </center>
 
           <div className="title">{t("login")}</div>
@@ -83,7 +95,7 @@ const Login = () => {
                 placeholder={t("email")}
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}   // <-- CHANGED
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -101,7 +113,12 @@ const Login = () => {
             </div>
 
             <center>
-              <button type="submit" className="btn btn-primary" id="loginBtn" disabled={isLoading}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                id="loginBtn"
+                disabled={isLoading}
+              >
                 <span className="btn-text">
                   {isLoading ? t("logging_in") : t("login")}
                 </span>
@@ -120,7 +137,6 @@ const Login = () => {
           <p>{t("brand_text.subtitle1")}</p>
           <p>{t("brand_text.subtitle2")}</p>
         </div>
-
       </div>
     </div>
   );

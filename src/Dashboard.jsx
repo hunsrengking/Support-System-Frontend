@@ -1,32 +1,12 @@
 import React, { useState, useEffect } from "react";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart as RechartsPie,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
-
-// Import Font Awesome
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faSearch,
   faBell,
   faUser,
   faFileAlt,
   faChartBar,
   faCar,
-  faMotorcycle,
   faWrench,
   faDollarSign,
   faUsers,
@@ -35,15 +15,12 @@ import {
   faChartArea,
   faClock,
   faExclamationCircle,
-  faEye,
   faBars,
   faSignOutAlt,
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Mock API service functions
 const apiService = {
-  // Simulate API calls with delays
   getDashboardData: () => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -108,29 +85,9 @@ const apiService = {
             },
           ],
         });
-      }, 800); // Simulate network delay
+      }, 800);
     });
   },
-
-  search: (query) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock search results
-        const results = [
-          { type: "customer", name: "John Smith", detail: "3 vehicles" },
-          { type: "service", name: "Oil Change", detail: "$49.99" },
-          { type: "invoice", name: "INV-00345", detail: "Pending - $120" },
-        ].filter(
-          (item) =>
-            item.name.toLowerCase().includes(query.toLowerCase()) ||
-            item.detail.toLowerCase().includes(query.toLowerCase())
-        );
-
-        resolve(results);
-      }, 300);
-    });
-  },
-
   getUserProfile: () => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -146,7 +103,6 @@ const apiService = {
 };
 
 const Dashboard = () => {
-  // State management
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notifications, setNotifications] = useState(5);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -158,9 +114,7 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState("dashboard");
-  const [timeRange, setTimeRange] = useState("week"); // For chart filtering
 
-  // Load dashboard data on component mount
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -179,12 +133,10 @@ const Dashboard = () => {
 
     loadData();
 
-    // Set up live date/time
     const timer = setInterval(() => setCurrentDateTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Handle search with debouncing
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setSearchResults([]);
@@ -199,9 +151,8 @@ const Dashboard = () => {
     }, 500);
 
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
+  });
 
-  // Format date and time
   const formattedDate = currentDateTime.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "long",
@@ -215,286 +166,224 @@ const Dashboard = () => {
     hour12: true,
   });
 
-  // Handle notification click
   const handleNotificationsClick = () => {
-    setNotifications(0); // Mark as read
-    // In a real app, you would navigate to notifications page
+    setNotifications(0);
     alert("Notifications feature would open here");
   };
-
-  // Handle time range change for charts
-  const handleTimeRangeChange = (range) => {
-    setTimeRange(range);
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 800);
-  };
-
-  // Loading state
   if (loading || !dashboardData) {
     return (
-      <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-3 text-gray-600">Loading dashboard data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-200 border-t-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">
+            Loading dashboard data...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-slate-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm z-10">
-        <div className="flex items-center justify-between px-6 py-4">
+      <header className="bg-white/80 backdrop-blur border-b border-slate-200 z-20">
+        <div className="flex items-center justify-between px-6 py-3.5">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <FontAwesomeIcon
                 icon={faBars}
-                className="h-5 w-5 text-gray-700"
+                className="h-5 w-5 text-slate-700"
               />
             </button>
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <FontAwesomeIcon
-                  icon={faWrench}
-                  className="h-6 w-6 text-white"
-                />
+
+            <div className="flex items-center space-x-3">
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+                  Systen Support
+                </h1>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">WBMS-CMS</h1>
             </div>
           </div>
 
           <div className="flex items-center space-x-4 relative">
-            <div className="relative">
-              <FontAwesomeIcon
-                icon={faSearch}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4"
-              />
-              <input
-                type="text"
-                placeholder="Search customers, services, invoices..."
-                className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => searchQuery && setShowSearchResults(true)}
-              />
-
-              {searchQuery && (
-                <button
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setShowSearchResults(false);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faTimes} className="h-4 w-4" />
-                </button>
-              )}
-
-              {showSearchResults && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white shadow-lg rounded-lg mt-1 z-10 border border-gray-200 overflow-hidden">
-                  {searchResults.map((result, index) => (
-                    <div
-                      key={index}
-                      className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
-                    >
-                      <div className="font-medium text-gray-900">
-                        {result.name}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {result.detail}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
+            {/* Notifications */}
             <div className="relative">
               <button
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+                className="p-2 rounded-full hover:bg-slate-100 transition-colors relative"
                 onClick={handleNotificationsClick}
               >
                 <FontAwesomeIcon
                   icon={faBell}
-                  className="h-5 w-5 text-gray-600"
+                  className="h-5 w-5 text-slate-600"
                 />
                 {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4.5 w-4.5 flex items-center justify-center border border-white">
                     {notifications}
                   </span>
                 )}
               </button>
             </div>
 
+            {/* User menu */}
             <div className="relative">
               <button
-                className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg p-2 transition-colors"
+                className="flex items-center space-x-2 hover:bg-slate-100 rounded-full px-2.5 py-1.5 transition-colors"
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
                 <div className="bg-blue-100 text-blue-700 rounded-full h-8 w-8 flex items-center justify-center">
                   <FontAwesomeIcon icon={faUser} className="h-4 w-4" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {userProfile?.name}
-                </span>
+                <div className="hidden sm:flex flex-col items-start">
+                  <span className="text-xs font-medium text-slate-800">
+                    {userProfile?.name}
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {userProfile?.role}
+                  </span>
+                </div>
               </button>
 
               {showUserMenu && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">
+                <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-xl shadow-lg py-1.5 z-40 border border-slate-200">
+                  <div className="px-4 py-2.5 border-b border-slate-100">
+                    <p className="text-sm font-semibold text-slate-900">
                       {userProfile?.name}
                     </p>
-                    <p className="text-xs text-gray-500">{userProfile?.role}</p>
+                    <p className="text-xs text-slate-500">
+                      {userProfile?.role}
+                    </p>
                   </div>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition-colors"
-                  >
+                  <button className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 transition-colors">
                     Profile
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition-colors"
-                  >
+                  </button>
+                  <button className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 transition-colors">
                     Settings
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center"
-                  >
+                  </button>
+                  <button className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center">
                     <FontAwesomeIcon
                       icon={faSignOutAlt}
                       className="h-4 w-4 mr-2"
                     />
                     Sign out
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
           </div>
         </div>
       </header>
-
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
-          className={`bg-white shadow-sm transform transition-all duration-300 ${
-            sidebarOpen ? "w-64" : "w-0"
-          } overflow-hidden flex-shrink-0`}
+          className={`bg-white/90 backdrop-blur border-r border-slate-200 transition-all duration-300 flex-shrink-0 ${
+            sidebarOpen ? "w-60" : "w-18"
+          }`}
         >
-          <nav className="p-4 space-y-1">
-            <a
-              href="#"
-              className={`flex items-center space-x-3 rounded-lg px-3 py-3 ${
+          <nav className="p-3 space-y-1 h-full flex flex-col">
+            <Link
+              to="/dashboard"
+              className={`group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                 activeView === "dashboard"
-                  ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                  : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-              } transition-all`}
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveView("dashboard");
-              }}
+                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+              onClick={() => setActiveView("dashboard")}
             >
-              <FontAwesomeIcon icon={faChartBar} className="h-5 w-5" />
-              <span className="font-medium">Dashboard</span>
-            </a>
-            <a
-              href="#"
-              className={`flex items-center space-x-3 rounded-lg px-3 py-3 ${
-                activeView === "customers"
-                  ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                  : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-              } transition-all`}
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveView("customers");
-              }}
+              <div
+                className={`flex items-center justify-center h-8 w-8 rounded-lg mr-3 transition-all ${
+                  activeView === "dashboard"
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                }`}
+              >
+                <FontAwesomeIcon icon={faChartBar} className="h-4 w-4" />
+              </div>
+              {sidebarOpen && <span>Dashboard</span>}
+            </Link>
+
+            <Link
+              to="/tickets"
+              className={`group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                activeView === "tickets"
+                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+              onClick={() => setActiveView("tickets")}
             >
-              <FontAwesomeIcon icon={faUsers} className="h-5 w-5" />
-              <span>Customers</span>
-            </a>
-            <a
-              href="#"
-              className={`flex items-center space-x-3 rounded-lg px-3 py-3 ${
-                activeView === "vehicles"
-                  ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                  : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-              } transition-all`}
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveView("vehicles");
-              }}
-            >
-              <FontAwesomeIcon icon={faCar} className="h-5 w-5" />
-              <span>Vehicles</span>
-            </a>
-            <a
-              href="#"
-              className={`flex items-center space-x-3 rounded-lg px-3 py-3 ${
-                activeView === "services"
-                  ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                  : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-              } transition-all`}
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveView("services");
-              }}
-            >
-              <FontAwesomeIcon icon={faWrench} className="h-5 w-5" />
-              <span>Services</span>
-            </a>
-            <a
-              href="#"
-              className={`flex items-center space-x-3 rounded-lg px-3 py-3 ${
+              <div
+                className={`flex items-center justify-center h-8 w-8 rounded-lg mr-3 transition-all ${
+                  activeView === "tickets"
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                }`}
+              >
+                <FontAwesomeIcon icon={faUsers} className="h-4 w-4" />
+              </div>
+              {sidebarOpen && <span>Tickets</span>}
+            </Link>
+
+            <Link
+              to="/invoices"
+              className={`group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                 activeView === "invoices"
-                  ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                  : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-              } transition-all`}
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveView("invoices");
-              }}
+                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+              onClick={() => setActiveView("invoices")}
             >
-              <FontAwesomeIcon icon={faFileAlt} className="h-5 w-5" />
-              <span>Invoices</span>
-            </a>
-            <a
-              href="#"
-              className={`flex items-center space-x-3 rounded-lg px-3 py-3 ${
+              <div
+                className={`flex items-center justify-center h-8 w-8 rounded-lg mr-3 transition-all ${
+                  activeView === "invoices"
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                }`}
+              >
+                <FontAwesomeIcon icon={faFileAlt} className="h-4 w-4" />
+              </div>
+              {sidebarOpen && <span>Invoices</span>}
+            </Link>
+
+            <Link
+              to="/reports"
+              className={`group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                 activeView === "reports"
-                  ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                  : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-              } transition-all`}
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveView("reports");
-              }}
+                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+              onClick={() => setActiveView("reports")}
             >
-              <FontAwesomeIcon icon={faChartArea} className="h-5 w-5" />
-              <span>Reports</span>
-            </a>
+              <div
+                className={`flex items-center justify-center h-8 w-8 rounded-lg mr-3 transition-all ${
+                  activeView === "reports"
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                }`}
+              >
+                <FontAwesomeIcon icon={faChartArea} className="h-4 w-4" />
+              </div>
+              {sidebarOpen && <span>Reports</span>}
+            </Link>
           </nav>
         </aside>
 
         {/* Main */}
-        <main className="flex-1 flex flex-col p-6 overflow-y-auto bg-gradient-to-br from-blue-50/30 to-indigo-50/30">
-          {/* View selector - only show when not on dashboard */}
+        <main className="flex-1 flex flex-col p-5 md:p-6 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+          {/* View selector */}
           {activeView !== "dashboard" && (
-            <div className="mb-6 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-900 capitalize">
+            <div className="mb-5 bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+              <h2 className="text-lg font-semibold text-slate-900 capitalize flex items-center gap-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600 text-xs">
+                  {activeView.charAt(0).toUpperCase()}
+                </span>
                 {activeView}
               </h2>
-              <p className="text-gray-600">
-                This is the {activeView} view. In a real application, this would
-                show relevant content.
+              <p className="text-sm text-slate-500 mt-1.5">
+                This is the <span className="font-medium">{activeView}</span>{" "}
+                view. In a real application, this would show relevant content.
               </p>
             </div>
           )}
@@ -503,25 +392,26 @@ const Dashboard = () => {
           {activeView === "dashboard" && (
             <>
               {/* Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                {/* Total Customers */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4.5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Total Customers
+                      <p className="text-xs font-medium text-slate-500 tracking-wide uppercase">
+                        Total Tickets
                       </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-2xl font-bold text-slate-900 mt-2">
                         {dashboardData.totalCustomers.toLocaleString()}
                       </p>
-                      <p className="text-xs text-green-600 flex items-center mt-1">
+                      <p className="text-[11px] text-emerald-600 flex items-center mt-1.5 rounded-full bg-emerald-50 inline-flex px-2 py-0.5">
                         <FontAwesomeIcon
                           icon={faChartLine}
                           className="h-3 w-3 mr-1"
-                        />{" "}
-                        +12.5%
+                        />
+                        +12.5% vs last week
                       </p>
                     </div>
-                    <div className="bg-blue-100 p-3 rounded-lg">
+                    <div className="bg-blue-50 p-3 rounded-xl">
                       <FontAwesomeIcon
                         icon={faUsers}
                         className="h-5 w-5 text-blue-600"
@@ -529,54 +419,49 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
+                {/* Vehicles */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4.5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
+                      <p className="text-xs font-medium text-slate-500 tracking-wide uppercase">
                         Vehicles Registered
                       </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-2xl font-bold text-slate-900 mt-2">
                         {dashboardData.vehiclesRegistered.total.toLocaleString()}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-[11px] text-slate-500 mt-1.5">
                         {dashboardData.vehiclesRegistered.cars.toLocaleString()}{" "}
-                        Cars |{" "}
+                        Cars ·{" "}
                         {dashboardData.vehiclesRegistered.motos.toLocaleString()}{" "}
                         Motos
                       </p>
                     </div>
-                    <div className="flex space-x-1">
-                      <div className="bg-blue-100 p-2 rounded-lg">
+                    <div className="flex space-x-1.5">
+                      <div className="bg-blue-50 p-2.5 rounded-xl">
                         <FontAwesomeIcon
                           icon={faCar}
                           className="h-4 w-4 text-blue-600"
-                        />
-                      </div>
-                      <div className="bg-green-100 p-2 rounded-lg">
-                        <FontAwesomeIcon
-                          icon={faMotorcycle}
-                          className="h-4 w-4 text-green-600"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
+                {/* Services Today */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4.5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
+                      <p className="text-xs font-medium text-slate-500 tracking-wide uppercase">
                         Services Today
                       </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-2xl font-bold text-slate-900 mt-2">
                         {dashboardData.servicesToday}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {dashboardData.servicesThisMonth} This Month
+                      <p className="text-[11px] text-slate-500 mt-1.5">
+                        {dashboardData.servicesThisMonth} this month
                       </p>
                     </div>
-                    <div className="bg-purple-100 p-3 rounded-lg">
+                    <div className="bg-purple-50 p-3 rounded-xl">
                       <FontAwesomeIcon
                         icon={faWrench}
                         className="h-5 w-5 text-purple-600"
@@ -585,288 +470,56 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
+                {/* Revenue Today */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4.5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
+                      <p className="text-xs font-medium text-slate-500 tracking-wide uppercase">
                         Revenue Today
                       </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-2xl font-bold text-slate-900 mt-2">
                         ${dashboardData.revenueToday.toLocaleString()}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        ${dashboardData.revenueThisMonth.toLocaleString()} This
-                        Month
+                      <p className="text-[11px] text-slate-500 mt-1.5">
+                        ${dashboardData.revenueThisMonth.toLocaleString()} this
+                        month
                       </p>
                     </div>
-                    <div className="bg-green-100 p-3 rounded-lg">
+                    <div className="bg-emerald-50 p-3 rounded-xl">
                       <FontAwesomeIcon
                         icon={faDollarSign}
-                        className="h-5 w-5 text-green-600"
+                        className="h-5 w-5 text-emerald-600"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
+                {/* Pending Ticket */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4.5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">
-                        Pending Invoices
+                      <p className="text-xs font-medium text-slate-500 tracking-wide uppercase">
+                        Pending Ticket
                       </p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-2xl font-bold text-slate-900 mt-2">
                         {dashboardData.pendingInvoices.count}
                       </p>
-                      <p className="text-xs text-orange-600 mt-1">
+                      <p className="text-[11px] text-amber-600 mt-1.5 bg-amber-50 inline-flex px-2 py-0.5 rounded-full">
                         ${dashboardData.pendingInvoices.amount.toLocaleString()}{" "}
                         Outstanding
                       </p>
                     </div>
-                    <div className="bg-orange-100 p-3 rounded-lg">
+                    <div className="bg-amber-50 p-3 rounded-xl">
                       <FontAwesomeIcon
                         icon={faExclamationCircle}
-                        className="h-5 w-5 text-orange-600"
+                        className="h-5 w-5 text-amber-600"
                       />
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Service Trends (This Week)
-                    </h3>
-                    <select
-                      className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={timeRange}
-                      onChange={(e) => handleTimeRangeChange(e.target.value)}
-                    >
-                      <option value="week">This Week</option>
-                      <option value="month">This Month</option>
-                      <option value="quarter">This Quarter</option>
-                    </select>
-                  </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart
-                      data={dashboardData.servicesTrend}
-                      margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                      <XAxis dataKey="name" stroke="#6B7280" />
-                      <YAxis stroke="#6B7280" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "white",
-                          borderRadius: "6px",
-                          boxShadow:
-                            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                          border: "1px solid #E5E7EB",
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="services"
-                        stroke="#3B82F6"
-                        strokeWidth={2}
-                        dot={{ fill: "#3B82F6", strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: "#2563EB" }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Top Services (This Month)
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                      data={dashboardData.topServices}
-                      margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                      <XAxis dataKey="name" stroke="#6B7280" />
-                      <YAxis stroke="#6B7280" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "white",
-                          borderRadius: "6px",
-                          boxShadow:
-                            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                          border: "1px solid #E5E7EB",
-                        }}
-                      />
-                      <Bar
-                        dataKey="count"
-                        fill="#10B981"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Customer Types
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RechartsPie>
-                      <Pie
-                        data={dashboardData.customerTypes}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={70}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        dataKey="value"
-                        label={({ name, percent }) =>
-                          `${name}: ${(percent * 100).toFixed(0)}%`
-                        }
-                        labelLine={false}
-                      >
-                        {dashboardData.customerTypes.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.color}
-                            stroke="#fff"
-                            strokeWidth={2}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "white",
-                          borderRadius: "6px",
-                          boxShadow:
-                            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                          border: "1px solid #E5E7EB",
-                        }}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={36}
-                        iconType="circle"
-                        iconSize={10}
-                        formatter={(value) => (
-                          <span className="text-sm text-gray-600">{value}</span>
-                        )}
-                      />
-                    </RechartsPie>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Revenue Flow (This Month)
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart
-                      data={dashboardData.revenueFlow}
-                      margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                      <XAxis dataKey="name" stroke="#6B7280" />
-                      <YAxis stroke="#6B7280" />
-                      <Tooltip
-                        formatter={(value) => [
-                          `$${value.toLocaleString()}`,
-                          "Revenue",
-                        ]}
-                        contentStyle={{
-                          backgroundColor: "white",
-                          borderRadius: "6px",
-                          boxShadow:
-                            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                          border: "1px solid #E5E7EB",
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke="#8B5CF6"
-                        fill="#8B5CF6"
-                        fillOpacity={0.2}
-                        strokeWidth={2}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Recent Activity
-                  </h3>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1 transition-colors">
-                    <FontAwesomeIcon icon={faEye} className="h-4 w-4" />
-                    <span>View All</span>
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {dashboardData.recentActivities.map((activity, index) => {
-                    return (
-                      <div
-                        key={index}
-                        className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
-                      >
-                        <div
-                          className={`p-2 rounded-full ${
-                            activity.type === "booking"
-                              ? "bg-blue-100 text-blue-600"
-                              : activity.type === "payment"
-                              ? "bg-green-100 text-green-600"
-                              : activity.type === "customer"
-                              ? "bg-purple-100 text-purple-600"
-                              : "bg-orange-100 text-orange-600"
-                          }`}
-                        >
-                          <FontAwesomeIcon
-                            icon={activity.icon}
-                            className="h-4 w-4"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-gray-900 font-medium">
-                            {activity.message}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {activity.time}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </>
           )}
-
-          {/* Footer */}
-          <footer className="mt-auto p-4 text-center text-gray-600 text-sm space-y-1 rounded-lg ">
-            <div>
-              Release Version: 23.3.V2.RELEASE.UAT | TUFU Release Date:
-              20-March-2023
-            </div>
-            <div>
-              <span className="text-blue-600 font-bold">Branch Name:</span>{" "}
-              <span className="font-bold">{userProfile?.branch}</span> |{" "}
-              <span className="text-blue-600 font-bold">Status:</span>{" "}
-              <span className="font-bold">Branch is opening</span> |{" "}
-              <span className="text-blue-600 font-bold">Working Date:</span>{" "}
-              <span className="font-bold">
-                {formattedDate} {formattedTime}
-              </span>
-            </div>
-            <div>
-              <span className="text-blue-600 font-bold">User Login:</span>{" "}
-              <span className="font-bold">{userProfile?.name}</span>
-            </div>
-          </footer>
         </main>
       </div>
     </div>
