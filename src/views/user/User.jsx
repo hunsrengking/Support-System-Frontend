@@ -57,6 +57,11 @@ const Users = () => {
     }
   };
 
+  // New: view user detail
+  const handleViewUser = (id) => {
+    navigate(`/settings/users/${id}/view`);
+  };
+
   // Filter users based on search term
   const filteredUsers = users.filter(
     (user) =>
@@ -156,7 +161,8 @@ const Users = () => {
                 filteredUsers.map((u) => (
                   <tr
                     key={u.id}
-                    className="hover:bg-slate-50 transition-colors duration-150"
+                    onClick={() => handleViewUser(u.id)}
+                    className="hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
                   >
                     <td className="px-4 py-3 text-slate-700 font-medium">
                       {u.id}
@@ -198,7 +204,10 @@ const Users = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center gap-2">
+                      <div
+                        className="inline-flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           onClick={() => handleEditUser(u.id)}
                           className="inline-flex items-center justify-center w-8 h-8 rounded-lg
@@ -227,9 +236,7 @@ const Users = () => {
                     colSpan={7}
                     className="px-4 py-8 text-center text-sm text-slate-400"
                   >
-                    {searchTerm
-                      ? "No users match your search."
-                      : "No users found."}
+                    {searchTerm ? "No users match your search." : "No users found."}
                   </td>
                 </tr>
               )}
