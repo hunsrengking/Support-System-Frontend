@@ -12,6 +12,7 @@ import {
 
 const Header = ({ toggleSidebar }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const navigate = useNavigate();
 
   const storedUser = (() => {
@@ -25,30 +26,56 @@ const Header = ({ toggleSidebar }) => {
   const user = {
     name: storedUser?.username || storedUser?.name || "User",
     role: storedUser?.role?.name || "Role",
-    // permissions is an array in your login response
     permissions: Array.isArray(storedUser?.permissions)
       ? storedUser.permissions.map((p) => p.name)
       : [],
   };
 
   const handleLogout = async () => {
-    try {
-      // call server logout if available, ignore errors
-      await axiosClient.post("/api/logout").catch(() => {});
+    setShowUserMenu(false);
+    setLoggingOut(true);
 
-      // remove the same keys you saved during login
+    try {
+      const token =
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("token") ||
+        null;
+
+      if (token) {
+        await axiosClient.post("/logout", null, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } else {
+        console.warn(
+          "No token found in localStorage — skipping backend logout call."
+        );
+      }
+    } catch (err) {
+      console.warn(
+        "Logout request failed (continuing to clear local state):",
+        err
+      );
+    } finally {
       localStorage.removeItem("access_token");
+      localStorage.removeItem("token");
       localStorage.removeItem("app_auth_user");
       localStorage.removeItem("permissions");
+      localStorage.removeItem("refresh_token");
 
-      // optionally you may force a full reload to reset app state:
-      // window.location.href = "/login";
+      if (
+        axiosClient.defaults &&
+        axiosClient.defaults.headers &&
+        axiosClient.defaults.headers.common
+      ) {
+        delete axiosClient.defaults.headers.common["Authorization"];
+      }
+
+      setLoggingOut(false);
       navigate("/login");
-    } catch (err) {
-      console.error("Logout error:", err);
     }
   };
-
   return (
     <header className="bg-white/80 backdrop-blur border-b border-slate-200 z-20">
       <div className="flex items-center justify-between px-6 py-3.5">
@@ -102,7 +129,6 @@ const Header = ({ toggleSidebar }) => {
 
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 shadow-lg rounded-xl py-2">
-                {/* Use Link for navigation, and close the menu when clicked */}
                 <Link
                   to="/profile"
                   onClick={() => setShowUserMenu(false)}
@@ -121,10 +147,16 @@ const Header = ({ toggleSidebar }) => {
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  disabled={loggingOut}
+                  className={`flex items-center w-full text-left px-4 py-2 text-sm ${
+                    loggingOut
+                      ? "text-gray-400"
+                      : "text-red-600 hover:bg-red-50"
+                  }`}
+                  aria-busy={loggingOut}
                 >
                   <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
-                  Logout
+                  {loggingOut ? "Logging out..." : "Logout"}
                 </button>
               </div>
             )}
