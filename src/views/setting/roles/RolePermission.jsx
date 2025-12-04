@@ -11,7 +11,7 @@ const RolePermission = () => {
 
   const [role, setRole] = useState(null);
   const [permissions, setPermissions] = useState([]);
-  const [selected, setSelected] = useState([]); // store permission IDs
+  const [selected, setSelected] = useState([]);
 
   useEffect(() => {
     loadRole();
@@ -22,7 +22,6 @@ const RolePermission = () => {
     const res = await axiosClient.get(`/api/role/${id}`);
     setRole(res.data);
 
-    // ✅ role.permissions is array of objects -> map to IDs
     const selectedIds = (res.data.permissions || []).map((p) => Number(p.id));
 
     setSelected(selectedIds);
@@ -30,7 +29,6 @@ const RolePermission = () => {
 
   const loadPermissions = async () => {
     const res = await axiosClient.get("/api/permissions");
-    // expect: [{ id, name }, ...]
     setPermissions(res.data || []);
   };
 
@@ -43,11 +41,9 @@ const RolePermission = () => {
   };
 
   const saveAssign = async () => {
-    await axiosClient.post(`/api/role/${id}/permissions`, {
-      // ✅ send list of IDs
+    await axiosClient.put(`/api/role/${id}/permissions`, {
       permissions: selected,
     });
-
     navigate("/settings/roles");
   };
 

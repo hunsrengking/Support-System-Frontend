@@ -9,37 +9,31 @@ import RolePermission from "../views/setting/roles/RolePermission";
 import RoleCreate from "../views/setting/roles/RoleCreate";
 import RoleList from "../views/setting/roles/RoleList";
 import Login from "../views/auth/Login";
-import { AuthProvider, useAuth } from "../auth/auth";
+import { AuthProvider } from "../auth/auth";
 import UserCreate from "../views/user/UserCreate";
 import UserEdit from "../views/user/UserEdit";
 
-// Protect route component
-const ProtectedRoute = ({ children }) => {
-  const { token, loading } = useAuth();
+import ProtectedRoute from "./ProtectedRoute";
+import RequirePermission from "./RequirePermission";
+import NoPermission from "../views/errors/NoPermission";
+import UsersView from "../views/user/UserView";
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-slate-500 text-sm">Checking session...</div>
-      </div>
-    );
-  }
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-};
+// You must create these
+// import Tickets from "../views/ticket/Tickets";
+// import Reports from "../views/reports/Reports";
 
 const AppRoute = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public route */}
+          {/* Public */}
           <Route path="/login" element={<Login />} />
 
-          {/* Protected routes */}
+          {/* 403 */}
+          <Route path="/403" element={<NoPermission />} />
+
+          {/* Protected */}
           <Route
             path="/"
             element={
@@ -48,18 +42,111 @@ const AppRoute = () => {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="/settings/users/create" element={<UserCreate />} />
-            <Route path="/settings/users/:id/edit" element={<UserEdit />} />
-            <Route path="setting" element={<Settings />} />
-            <Route path="settings/roles" element={<RoleList />} />
-            <Route path="settings/roles/create" element={<RoleCreate />} />
+            {/* Dashboard */}
+            <Route
+              index
+              element={
+                <RequirePermission perm="view_dashboard">
+                  <Dashboard />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="dashboard"
+              element={
+                <RequirePermission perm="view_dashboard">
+                  <Dashboard />
+                </RequirePermission>
+              }
+            />
+
+            {/* Tickets */}
+            {/* <Route
+              path="ticket"
+              element={
+                <RequirePermission perm="view_ticket">
+                  <Tickets />
+                </RequirePermission>
+              }
+            /> */}
+
+            {/* Users list */}
+            <Route
+              path="users"
+              element={
+                <RequirePermission perm="view_users">
+                  <Users />
+                </RequirePermission>
+              }
+            />
+
+            {/* Create user */}
+            <Route
+              path="settings/users/create"
+              element={
+                <RequirePermission perm="create_users">
+                  <UserCreate />
+                </RequirePermission>
+              }
+            />
+            <Route path="settings/users/:id/view" element={<UsersView />} />
+
+            {/* Edit user */}
+            <Route
+              path="settings/users/:id/edit"
+              element={
+                <RequirePermission perm="edit_users">
+                  <UserEdit />
+                </RequirePermission>
+              }
+            />
+
+            {/* Setting page */}
+            <Route
+              path="setting"
+              element={
+                <RequirePermission perm="view_setting">
+                  <Settings />
+                </RequirePermission>
+              }
+            />
+
+            {/* Roles */}
+            <Route
+              path="settings/roles"
+              element={
+                <RequirePermission perm="view_roles">
+                  <RoleList />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="settings/roles/create"
+              element={
+                <RequirePermission perm="create_roles">
+                  <RoleCreate />
+                </RequirePermission>
+              }
+            />
             <Route
               path="settings/roles/:id/permissions"
-              element={<RolePermission />}
+              element={
+                <RequirePermission perm="edit_permissions">
+                  <RolePermission />
+                </RequirePermission>
+              }
             />
+
+            {/* Reports */}
+            {/* <Route
+              path="reports"
+              element={
+                <RequirePermission perm="view_reports">
+                  <Reports />
+                </RequirePermission>
+              }
+            /> */}
+
             <Route path="*" element={<div>404 Not Found</div>} />
           </Route>
         </Routes>

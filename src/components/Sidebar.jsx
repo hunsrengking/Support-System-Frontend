@@ -8,6 +8,7 @@ import {
   faFileAlt,
   faChartArea,
 } from "@fortawesome/free-solid-svg-icons";
+import { hasPermission } from "../utils/permission"; // adjust path
 
 const Sidebar = ({ sidebarOpen }) => {
   return (
@@ -17,43 +18,55 @@ const Sidebar = ({ sidebarOpen }) => {
       }`}
     >
       <nav className="p-3 space-y-2">
-        <Link
-          to="/dashboard"
-          
-          className="flex items-center p-2 rounded-lg hover:bg-slate-100"
-        >
-          <FontAwesomeIcon icon={faChartBar} className="mr-3" />
-          {sidebarOpen && "Dashboard"}
-        </Link>
-        <Link
-          to="/ticket"
-          className="flex items-center p-2 rounded-lg hover:bg-slate-100"
-        >
-          <FontAwesomeIcon icon={faFileAlt} className="mr-3" />
-          {sidebarOpen && "Tickets"}
-        </Link>
-        <Link
-          to="/setting"
-          className="flex items-center p-2 rounded-lg hover:bg-slate-100"
-        >
-          <FontAwesomeIcon icon={faCogs} className="mr-3" />
-          {sidebarOpen && "Setting"}
-        </Link>
-        <Link
-          to="/users"
-          className="flex items-center p-2 rounded-lg hover:bg-slate-100"
-        >
-          <FontAwesomeIcon icon={faUsers} className="mr-3" />
-          {sidebarOpen && "Users"}
-        </Link>
+        {hasPermission("view_dashboard") && (
+          <Link
+            to="/dashboard"
+            className="flex items-center p-2 rounded-lg hover:bg-slate-100"
+          >
+            <FontAwesomeIcon icon={faChartBar} className="mr-3" />
+            {sidebarOpen && "Dashboard"}
+          </Link>
+        )}
 
-        <Link
-          to="/reports"
-          className="flex items-center p-2 rounded-lg hover:bg-slate-100"
-        >
-          <FontAwesomeIcon icon={faChartArea} className="mr-3" />
-          {sidebarOpen && "Reports"}
-        </Link>
+        {hasPermission("view_ticket") && (
+          <Link
+            to="/ticket"
+            className="flex items-center p-2 rounded-lg hover:bg-slate-100"
+          >
+            <FontAwesomeIcon icon={faFileAlt} className="mr-3" />
+            {sidebarOpen && "Tickets"}
+          </Link>
+        )}
+
+        {hasPermission("view_setting") && (
+          <Link
+            to="/setting"
+            className="flex items-center p-2 rounded-lg hover:bg-slate-100"
+          >
+            <FontAwesomeIcon icon={faCogs} className="mr-3" />
+            {sidebarOpen && "Setting"}
+          </Link>
+        )}
+
+        {hasPermission("view_users") && (
+          <Link
+            to="/users"
+            className="flex items-center p-2 rounded-lg hover:bg-slate-100"
+          >
+            <FontAwesomeIcon icon={faUsers} className="mr-3" />
+            {sidebarOpen && "Users"}
+          </Link>
+        )}
+
+        {hasPermission("view_reports") && (
+          <Link
+            to="/reports"
+            className="flex items-center p-2 rounded-lg hover:bg-slate-100"
+          >
+            <FontAwesomeIcon icon={faChartArea} className="mr-3" />
+            {sidebarOpen && "Reports"}
+          </Link>
+        )}
       </nav>
     </aside>
   );

@@ -44,8 +44,6 @@ export const AuthProvider = ({ children }) => {
 
     navigate("/dashboard");
   };
-
-  // ❌ logout
   const signOut = () => {
     setToken(null);
     setUser(null);
