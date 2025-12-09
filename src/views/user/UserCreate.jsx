@@ -21,7 +21,7 @@ const UserCreate = () => {
 
     try {
       await axiosClient.post("/api/users", formData);
-      navigate("/settings/users");
+      navigate("/users");
     } catch (err) {
       console.error(err);
     }

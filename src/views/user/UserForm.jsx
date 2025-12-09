@@ -53,44 +53,51 @@ const UserForm = ({
   return (
     <form
       onSubmit={onSubmit}
-      className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4 max-w-xl"
+      className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4"
     >
       {/* Username */}
-      <div>
-        <label className="text-sm text-slate-600">Username</label>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <label className="text-sm text-slate-600 sm:w-32">
+          Username <span className="text-red-500">*</span>
+        </label>
         <input
           type="text"
           name="username"
           value={formData.username || ""}
           onChange={handleChange}
           required
-          className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
           placeholder="Username"
         />
       </div>
 
       {/* Email */}
-      <div>
-        <label className="text-sm text-slate-600">Email</label>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <label className="text-sm text-slate-600 sm:w-32">
+          Email <span className="text-red-500">*</span>
+        </label>
         <input
           type="email"
           name="email"
           value={formData.email || ""}
           onChange={handleChange}
           required
-          className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
           placeholder="user@mail.com"
         />
       </div>
 
       {/* Role select */}
-      <div>
-        <label className="text-sm text-slate-600">Role</label>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <label className="text-sm text-slate-600 sm:w-32">
+          Role <span className="text-red-500">*</span>
+        </label>
         <select
           name="role_id"
           value={formData.role_id || ""}
           onChange={handleChange}
-          className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          required
+          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
           disabled={loading.roles}
         >
           <option value="">Select role</option>
@@ -105,14 +112,17 @@ const UserForm = ({
         )}
       </div>
 
-      {/* Department select - Added just like role */}
-      <div>
-        <label className="text-sm text-slate-600">Department</label>
+      {/* Department select */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <label className="text-sm text-slate-600 sm:w-32">
+          Department <span className="text-red-500">*</span>
+        </label>
         <select
           name="department_id"
           value={formData.department_id || ""}
           onChange={handleChange}
-          className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          required
+          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
           disabled={loading.departments}
         >
           <option value="">Select department</option>
@@ -124,42 +134,48 @@ const UserForm = ({
             </option>
           ))}
         </select>
-        {loading.departments && (
-          <p className="text-xs text-slate-500 mt-1">Loading departments...</p>
-        )}
       </div>
+      {loading.departments && (
+        <p className="text-xs text-slate-500 mt-1">Loading departments...</p>
+      )}
 
+      {/* Password fields only when create */}
       {!isEdit && (
         <>
-          <div>
-            <label className="text-sm text-slate-600">Password</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <label className="text-sm text-slate-600 sm:w-32">
+              Password <span className="text-red-500">*</span>
+            </label>
             <input
               type="password"
               name="password"
               value={formData.password || ""}
               onChange={handleChange}
-              required={!isEdit}
-              className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+              required
+              className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
               placeholder="Enter password"
             />
           </div>
 
-          <div>
-            <label className="text-sm text-slate-600">Confirm Password</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <label className="text-sm text-slate-600 sm:w-32">
+              Confirm Password <span className="text-red-500">*</span>
+            </label>
             <input
               type="password"
               name="password_confirmation"
               value={formData.password_confirmation || ""}
               onChange={handleChange}
-              required={!isEdit}
-              className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+              required
+              className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
               placeholder="Confirm password"
             />
           </div>
         </>
       )}
 
-      <div className="flex gap-3">
+      {/* Actions */}
+      <div className="flex gap-3 justify-end pt-2">
         <button
           type="submit"
           disabled={isLoading}

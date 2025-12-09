@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChartBar,
-  faCogs,
   faUsers,
-  faFileAlt,
   faChartArea,
+  faTicket,
+  faCheckToSlot,
+  faSliders,
 } from "@fortawesome/free-solid-svg-icons";
-import { hasPermission } from "../utils/permission"; // adjust path
+import { hasPermission } from "../utils/permission";
 
 const Sidebar = ({ sidebarOpen }) => {
   return (
@@ -33,17 +34,25 @@ const Sidebar = ({ sidebarOpen }) => {
             to="/ticket"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
           >
-            <FontAwesomeIcon icon={faFileAlt} className="mr-3" />
+            <FontAwesomeIcon icon={faTicket} className="mr-3" />
             {sidebarOpen && "Tickets"}
           </Link>
         )}
-
+        {hasPermission("view_ticket") && (
+          <Link
+            to="/checkermaker"
+            className="flex items-center p-2 rounded-lg hover:bg-slate-100"
+          >
+            <FontAwesomeIcon icon={faCheckToSlot} className="mr-3" />
+            {sidebarOpen && "CheckerBox"}
+          </Link>
+        )}
         {hasPermission("view_setting") && (
           <Link
             to="/setting"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
           >
-            <FontAwesomeIcon icon={faCogs} className="mr-3" />
+            <FontAwesomeIcon icon={faSliders} className="mr-3" />
             {sidebarOpen && "Setting"}
           </Link>
         )}
