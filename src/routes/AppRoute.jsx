@@ -1,155 +1,191 @@
 // src/routes/AppRoute.jsx
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "../layouts/Layout";
-import Dashboard from "../views/dashboard/Dashboard";
-import Users from "../views/user/User";
-import Settings from "../views/setting/Settings";
-import RolePermission from "../views/setting/roles/RolePermission";
-import RoleCreate from "../views/setting/roles/RoleCreate";
-import RoleList from "../views/setting/roles/RoleList";
-import Login from "../views/auth/Login";
 import { AuthProvider } from "../auth/auth";
-import UserCreate from "../views/user/UserCreate";
-import UserEdit from "../views/user/UserEdit";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RequirePermission from "./RequirePermission";
-import NoPermission from "../views/errors/NoPermission";
-import UsersView from "../views/user/UserView";
+import Loading from "../components/common/Loanding";
+import CreateTicket from "../views/tickets/CreateTicket";
+import TicketChecker from "../views/setting/checker/Checker";
+import TicketCheckerView from "../views/setting/checker/CheckerView";
 
-// You must create these
-// import Tickets from "../views/ticket/Tickets";
-// import Reports from "../views/reports/Reports";
+// Lazy-loaded pages
+const Dashboard = lazy(() => import("../views/dashboard/Dashboard"));
+const Users = lazy(() => import("../views/user/User"));
+const Settings = lazy(() => import("../views/setting/Settings"));
+
+const RolePermission = lazy(() =>
+  import("../views/setting/roles/RolePermission")
+);
+const RoleCreate = lazy(() => import("../views/setting/roles/RoleCreate"));
+const RoleList = lazy(() => import("../views/setting/roles/RoleList"));
+
+const Login = lazy(() => import("../views/auth/Login"));
+
+const UserCreate = lazy(() => import("../views/user/UserCreate"));
+const UserEdit = lazy(() => import("../views/user/UserEdit"));
+const UsersView = lazy(() => import("../views/user/UserView"));
+
+const NoPermission = lazy(() => import("../views/errors/NoPermission"));
+
+const Ticket = lazy(() => import("../views/tickets/Ticket"));
+const ViewTicket = lazy(() => import("../views/tickets/ViewTicket"));
 
 const AppRoute = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          {/* Public */}
-          <Route path="/login" element={<Login />} />
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-          {/* 403 */}
-          <Route path="/403" element={<NoPermission />} />
+            <Route path="/403" element={<NoPermission />} />
 
-          {/* Protected */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            {/* Dashboard */}
             <Route
-              index
+              path="/"
               element={
-                <RequirePermission perm="view_dashboard">
-                  <Dashboard />
-                </RequirePermission>
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
               }
-            />
-            <Route
-              path="dashboard"
-              element={
-                <RequirePermission perm="view_dashboard">
-                  <Dashboard />
-                </RequirePermission>
-              }
-            />
+            >
+              <Route
+                index
+                element={
+                  <RequirePermission perm="view_dashboard">
+                    <Dashboard />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="dashboard"
+                element={
+                  <RequirePermission perm="view_dashboard">
+                    <Dashboard />
+                  </RequirePermission>
+                }
+              />
 
-            {/* Tickets */}
-            {/* <Route
-              path="ticket"
-              element={
-                <RequirePermission perm="view_ticket">
-                  <Tickets />
-                </RequirePermission>
-              }
-            /> */}
+              <Route
+                path="ticket"
+                element={
+                  <RequirePermission perm="view_ticket">
+                    <Ticket />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/ticket/create"
+                element={
+                  <RequirePermission perm="view_ticket">
+                    <CreateTicket />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/ticket/views/:id"
+                element={
+                  <RequirePermission perm="view_ticket">
+                    <ViewTicket />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/checkermaker"
+                element={
+                  <RequirePermission perm="view_ticket">
+                    <TicketChecker />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/checkermaker/view"
+                element={
+                  <RequirePermission perm="view_ticket">
+                    <TicketCheckerView />
+                  </RequirePermission>
+                }
+              />
 
-            {/* Users list */}
-            <Route
-              path="users"
-              element={
-                <RequirePermission perm="view_users">
-                  <Users />
-                </RequirePermission>
-              }
-            />
+              <Route
+                path="/users"
+                element={
+                  <RequirePermission perm="view_users">
+                    <Users />
+                  </RequirePermission>
+                }
+              />
 
-            {/* Create user */}
-            <Route
-              path="settings/users/create"
-              element={
-                <RequirePermission perm="create_users">
-                  <UserCreate />
-                </RequirePermission>
-              }
-            />
-            <Route path="settings/users/:id/view" element={<UsersView />} />
+              <Route
+                path="/users/create"
+                element={
+                  <RequirePermission perm="create_users">
+                    <UserCreate />
+                  </RequirePermission>
+                }
+              />
 
-            {/* Edit user */}
-            <Route
-              path="settings/users/:id/edit"
-              element={
-                <RequirePermission perm="edit_users">
-                  <UserEdit />
-                </RequirePermission>
-              }
-            />
+              <Route path="/users/:id/view" element={<UsersView />} />
 
-            {/* Setting page */}
-            <Route
-              path="setting"
-              element={
-                <RequirePermission perm="view_setting">
-                  <Settings />
-                </RequirePermission>
-              }
-            />
+              <Route
+                path="settings/users/:id/edit"
+                element={
+                  <RequirePermission perm="edit_users">
+                    <UserEdit />
+                  </RequirePermission>
+                }
+              />
 
-            {/* Roles */}
-            <Route
-              path="settings/roles"
-              element={
-                <RequirePermission perm="view_roles">
-                  <RoleList />
-                </RequirePermission>
-              }
-            />
-            <Route
-              path="settings/roles/create"
-              element={
-                <RequirePermission perm="create_roles">
-                  <RoleCreate />
-                </RequirePermission>
-              }
-            />
-            <Route
-              path="settings/roles/:id/permissions"
-              element={
-                <RequirePermission perm="edit_permissions">
-                  <RolePermission />
-                </RequirePermission>
-              }
-            />
+              <Route
+                path="setting"
+                element={
+                  <RequirePermission perm="view_setting">
+                    <Settings />
+                  </RequirePermission>
+                }
+              />
 
-            {/* Reports */}
-            {/* <Route
-              path="reports"
-              element={
-                <RequirePermission perm="view_reports">
-                  <Reports />
-                </RequirePermission>
-              }
-            /> */}
+              <Route
+                path="settings/roles"
+                element={
+                  <RequirePermission perm="view_roles">
+                    <RoleList />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="settings/roles/create"
+                element={
+                  <RequirePermission perm="create_roles">
+                    <RoleCreate />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="settings/roles/:id/permissions"
+                element={
+                  <RequirePermission perm="edit_permissions">
+                    <RolePermission />
+                  </RequirePermission>
+                }
+              />
 
-            <Route path="*" element={<div>404 Not Found</div>} />
-          </Route>
-        </Routes>
+              {/* Reports (example, still commented) */}
+              {/* <Route
+                path="reports"
+                element={
+                  <RequirePermission perm="view_reports">
+                    <Reports />
+                  </RequirePermission>
+                }
+              /> */}
+
+              <Route path="*" element={<div>404 Not Found</div>} />
+            </Route>
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

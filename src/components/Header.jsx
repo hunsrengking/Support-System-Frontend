@@ -24,13 +24,14 @@ const Header = ({ toggleSidebar }) => {
   })();
 
   const user = {
+    id: storedUser?.id || storedUser?.id || "id",
     name: storedUser?.username || storedUser?.name || "User",
     role: storedUser?.role?.name || "Role",
     permissions: Array.isArray(storedUser?.permissions)
       ? storedUser.permissions.map((p) => p.name)
       : [],
   };
-
+  console.log(user);
   const handleLogout = async () => {
     setShowUserMenu(false);
     setLoggingOut(true);
@@ -130,7 +131,7 @@ const Header = ({ toggleSidebar }) => {
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 shadow-lg rounded-xl py-2">
                 <Link
-                  to="/profile"
+                  to={`/users/${storedUser?.id}/view`}
                   onClick={() => setShowUserMenu(false)}
                   className="block px-4 py-2 text-sm hover:bg-blue-50"
                 >

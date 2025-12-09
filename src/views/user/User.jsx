@@ -8,6 +8,7 @@ import {
   faSearch,
   faEdit,
   faTrash,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 const Users = () => {
@@ -76,10 +77,12 @@ const Users = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Title */}
+
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold flex items-center gap-2 text-slate-900">
+             <FontAwesomeIcon icon={faUser} />
               User Management
-            </h2>
+            </h1>
             <p className="text-sm text-slate-500 mt-1">
               Manage user accounts, roles, and statuses.
             </p>
@@ -236,7 +239,9 @@ const Users = () => {
                     colSpan={7}
                     className="px-4 py-8 text-center text-sm text-slate-400"
                   >
-                    {searchTerm ? "No users match your search." : "No users found."}
+                    {searchTerm
+                      ? "No users match your search."
+                      : "No users found."}
                   </td>
                 </tr>
               )}
