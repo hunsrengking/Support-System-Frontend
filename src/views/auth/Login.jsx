@@ -3,6 +3,7 @@ import logo from "../../assets/images/logo/logo.png";
 import "./Login.css";
 import { useTranslation } from "react-i18next";
 import axiosClient from "../../services/axiosClient";
+import { useEffect } from "react";
 
 const Login = () => {
   const { t, i18n } = useTranslation();
@@ -49,6 +50,17 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.crossorigin="anonymous"
+    link.href ="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css";
+    document.head.appendChild(link);
+
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
 
   return (
     <div className="login-container">
