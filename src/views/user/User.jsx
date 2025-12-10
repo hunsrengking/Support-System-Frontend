@@ -39,11 +39,11 @@ const Users = () => {
   }, []);
 
   const handleAddUser = () => {
-    navigate("/settings/users/create"); // ➜ page with password input
+    navigate("/users/create"); // ➜ page with password input
   };
 
   const handleEditUser = (id) => {
-    navigate(`/settings/users/${id}/edit`); // ➜ page WITHOUT password input
+    navigate(`/users/${id}/edit`); // ➜ page WITHOUT password input
   };
 
   const handleDeleteUser = async (id) => {
@@ -60,7 +60,7 @@ const Users = () => {
 
   // New: view user detail
   const handleViewUser = (id) => {
-    navigate(`/settings/users/${id}/view`);
+    navigate(`/users/${id}/view`);
   };
 
   // Filter users based on search term

@@ -21,7 +21,7 @@ const TicketCheckerView = () => {
   const loadTicket = async () => {
     try {
       setLoading(true);
-      const res = await axiosClient.get(`/api/tickets/${id}`);
+      const res = await axiosClient.get(`/api/ticket/${id}`);
       setTicket(res.data);
     } catch (err) {
       console.error("Failed to load ticket:", err);
@@ -42,7 +42,7 @@ const TicketCheckerView = () => {
 
     try {
       setActionLoading(true);
-      await axiosClient.patch(`/api/tickets/${id}`, { status: newStatus });
+      await axiosClient.patch(`/api/ticket/${id}`, { status: newStatus });
       setTicket((prev) => ({ ...prev, status: newStatus }));
       alert("Status updated!");
     } catch (err) {

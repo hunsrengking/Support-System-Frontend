@@ -19,7 +19,7 @@ const Sidebar = ({ sidebarOpen }) => {
       }`}
     >
       <nav className="p-3 space-y-2">
-        {hasPermission("view_dashboard") && (
+        {hasPermission("VIEW_DASHBOARD") && (
           <Link
             to="/dashboard"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
@@ -29,7 +29,7 @@ const Sidebar = ({ sidebarOpen }) => {
           </Link>
         )}
 
-        {hasPermission("view_ticket") && (
+        {hasPermission("VIEW_TICKET") && (
           <Link
             to="/ticket"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
@@ -38,7 +38,7 @@ const Sidebar = ({ sidebarOpen }) => {
             {sidebarOpen && "Tickets"}
           </Link>
         )}
-        {hasPermission("view_ticket") && (
+        {hasPermission("VIEW_TICKET") && (
           <Link
             to="/checkermaker"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
@@ -47,7 +47,7 @@ const Sidebar = ({ sidebarOpen }) => {
             {sidebarOpen && "CheckerBox"}
           </Link>
         )}
-        {hasPermission("view_setting") && (
+        {hasPermission("VIEW_SETTING") && (
           <Link
             to="/setting"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
@@ -57,7 +57,7 @@ const Sidebar = ({ sidebarOpen }) => {
           </Link>
         )}
 
-        {hasPermission("view_users") && (
+        {hasPermission("VIEW_USER") && (
           <Link
             to="/users"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
@@ -67,7 +67,7 @@ const Sidebar = ({ sidebarOpen }) => {
           </Link>
         )}
 
-        {hasPermission("view_reports") && (
+        {hasPermission("VIEW_REPORTS") && (
           <Link
             to="/reports"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"

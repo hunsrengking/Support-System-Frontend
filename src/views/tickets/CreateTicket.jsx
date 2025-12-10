@@ -1,9 +1,13 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 // src/views/tickets/CreateTicket.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave, faTimes, faFile } from "@fortawesome/free-solid-svg-icons";
+import { hasPermission } from "../../utils/permission";
+
+const fileId = (f) => `${f.name}_${f.size}_${f.lastModified}`;
 
 const CreateTicket = () => {
   const navigate = useNavigate();
@@ -11,28 +15,111 @@ const CreateTicket = () => {
   const [form, setForm] = useState({
     subject: "",
     description: "",
-    priority: "Medium",
-    status: "Open",
+    priority: "",
     category: "",
     assigned_to: "",
     department: "",
     start_date: "",
     end_date: "",
-    images: [], // array of image Files
-    attachments: [], // array of attachment Files (docs, pdf, excel, txt, sql)
+    images: [],
+    attachments: [],
   });
 
-  // previews: array of { id, url, name } for images
   const [imagePreviews, setImagePreviews] = useState([]);
+  const imageUrlsRef = useRef(new Set());
+
+  const imageInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
+
+  const [departments, setDepartments] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [priorities, setPriorities] = useState([]);
+  const [assignedUsers, setAssignedUsers] = useState([]);
+
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingCategory, setLoadingCategory] = useState(false);
+  const [loadingPriority, setLoadingPriority] = useState(false);
+  const [loadingAssigned, setLoadingAssigned] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // cleanup object URLs when unmounting
+  // Use existing helper (reads from localStorage)
+  const canAssign = hasPermission("ASSIGN_TO_STAFF");
+
+  const loadDepartments = async () => {
+    setLoadingDepartments(true);
+    try {
+      const res = await axiosClient.get("/api/department");
+      setDepartments(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading departments:", err);
+      setDepartments([]);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
+  const loadCategory = async () => {
+    setLoadingCategory(true);
+    try {
+      const res = await axiosClient.get("/api/category");
+      setCategories(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading categories:", err);
+      setCategories([]);
+    } finally {
+      setLoadingCategory(false);
+    }
+  };
+
+  const loadPriority = async () => {
+    setLoadingPriority(true);
+    try {
+      const res = await axiosClient.get("/api/priority");
+      setPriorities(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading priorities:", err);
+      setPriorities([]);
+    } finally {
+      setLoadingPriority(false);
+    }
+  };
+
+  const loadAssignedUsers = async () => {
+    if (!canAssign) return;
+    setLoadingAssigned(true);
+    try {
+      const res = await axiosClient.get("/api/users");
+      setAssignedUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading users:", err);
+      setAssignedUsers([]);
+    } finally {
+      setLoadingAssigned(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDepartments();
+    loadCategory();
+    loadPriority();
+    if (canAssign) loadAssignedUsers();
+    else setForm((prev) => ({ ...prev, assigned_to: "" }));
+  }, []);
+
   useEffect(() => {
     return () => {
-      imagePreviews.forEach((p) => URL.revokeObjectURL(p.url));
+      imageUrlsRef.current.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          console.log(e);
+        }
+      });
+      imageUrlsRef.current.clear();
     };
-  }, [imagePreviews]);
+  }, []);
 
   const handleChange = (e) => {
     const { name, type, files, value } = e.target;
@@ -43,40 +130,33 @@ const CreateTicket = () => {
         const existing = form.images || [];
         const merged = [...existing];
 
+        const addedFiles = [];
         newFiles.forEach((f) => {
-          const isDup = merged.some(
-            (m) =>
-              m.name === f.name &&
-              m.size === f.size &&
-              m.lastModified === f.lastModified
-          );
-          if (!isDup) merged.push(f);
+          const id = fileId(f);
+          const isDup = merged.some((m) => fileId(m) === id);
+          if (!isDup) {
+            merged.push(f);
+            addedFiles.push(f);
+          }
         });
 
-        const newPreviews = newFiles
-          .filter(
-            (f) =>
-              !imagePreviews.some(
-                (p) =>
-                  p.name === f.name &&
-                  p.size === f.size &&
-                  p.lastModified === f.lastModified
-              )
-          )
-          .map((f) => ({
-            id: `${f.name}_${f.size}_${f.lastModified}`,
-            url: URL.createObjectURL(f),
+        const newPreviews = addedFiles.map((f) => {
+          const url = URL.createObjectURL(f);
+          imageUrlsRef.current.add(url);
+          return {
+            id: fileId(f),
+            url,
             name: f.name,
             size: f.size,
             lastModified: f.lastModified,
-          }));
+          };
+        });
 
-        setForm((prev) => ({ ...prev, images: merged }));
         setImagePreviews((prev) => [...prev, ...newPreviews]);
+        setForm((prev) => ({ ...prev, images: merged }));
       }
 
       if (name === "attachments") {
-        // Accept multiple attachments (docs/pdf/excel/txt/sql)
         const newFiles = Array.from(files || []);
         const existing = form.attachments || [];
         const merged = [...existing];
@@ -98,23 +178,50 @@ const CreateTicket = () => {
     }
   };
 
-  const removeImageAt = (index) => {
-    const toRemove = imagePreviews[index];
-    if (toRemove) {
-      URL.revokeObjectURL(toRemove.url);
-      setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-      setForm((prev) => {
-        const images = [...prev.images];
-        images.splice(index, 1);
-        return { ...prev, images };
-      });
-    }
+  const removeImageById = (idToRemove) => {
+    setImagePreviews((prevPreviews) => {
+      const toRemove = prevPreviews.find((p) => p.id === idToRemove);
+      if (toRemove) {
+        try {
+          URL.revokeObjectURL(toRemove.url);
+        } catch (e) {
+          console.log(e);
+        }
+        imageUrlsRef.current.delete(toRemove.url);
+      }
+      return prevPreviews.filter((p) => p.id !== idToRemove);
+    });
+
+    setForm((prev) => {
+      const images = (prev.images || []).filter(
+        (f) => fileId(f) !== idToRemove
+      );
+
+      if (images.length === 0 && imageInputRef.current) {
+        try {
+          imageInputRef.current.value = "";
+        } catch (e) {
+          console.log(e);
+        }
+      }
+
+      return { ...prev, images };
+    });
   };
 
   const removeAttachmentAt = (index) => {
     setForm((prev) => {
       const attachments = [...prev.attachments];
-      attachments.splice(index, 1);
+      if (index >= 0 && index < attachments.length)
+        attachments.splice(index, 1);
+      if (attachments.length === 0 && attachmentInputRef.current) {
+        try {
+          attachmentInputRef.current.value = "";
+        } catch (e) {
+          console.log(e);
+        }
+      }
+
       return { ...prev, attachments };
     });
   };
@@ -127,29 +234,24 @@ const CreateTicket = () => {
     try {
       const payload = new FormData();
 
-      // append regular fields (skip arrays handled below)
       Object.entries(form).forEach(([key, value]) => {
         if (key === "images" || key === "attachments") return;
-        if (value !== null && value !== "") {
-          payload.append(key, value);
-        }
+        // Do not send assigned_to if user lacks permission
+        if (key === "assigned_to" && !canAssign) return;
+        if (value !== null && value !== "") payload.append(key, value);
       });
 
-      // append images as images[]
       if (form.images && form.images.length) {
-        form.images.forEach((file) => {
-          payload.append("images[]", file);
-        });
+        form.images.forEach((file) => payload.append("images[]", file));
       }
 
-      // append attachments as attachments[]
       if (form.attachments && form.attachments.length) {
-        form.attachments.forEach((file) => {
-          payload.append("attachments[]", file);
-        });
+        form.attachments.forEach((file) =>
+          payload.append("attachments[]", file)
+        );
       }
 
-      await axiosClient.post("/api/tickets", payload, {
+      await axiosClient.post("/api/ticket", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -202,14 +304,13 @@ const CreateTicket = () => {
               value={form.subject}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl
-                         focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none"
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none"
               placeholder="Short title for the ticket"
             />
           </div>
 
-          {/* Priority / Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Category / Assigned To/ Priority  */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700">
                 Priority
@@ -220,33 +321,22 @@ const CreateTicket = () => {
                 onChange={handleChange}
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 bg-white outline-none"
               >
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-                <option>Critical</option>
+                <option value="">Select priority</option>
+                {loadingPriority ? (
+                  <option value="" disabled>
+                    Loading...
+                  </option>
+                ) : priorities.length > 0 ? (
+                  priorities.map((p) => (
+                    <option key={p.id ?? p.name} value={p.id ?? p.name}>
+                      {p.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No priorities available</option>
+                )}
               </select>
             </div>
-
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">
-                Status
-              </label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 bg-white outline-none"
-              >
-                <option>Open</option>
-                <option>In Progress</option>
-                <option>Resolved</option>
-                <option>Closed</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Category / Assigned To */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700">
                 Category
@@ -258,29 +348,63 @@ const CreateTicket = () => {
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 bg-white outline-none"
               >
                 <option value="">Select category</option>
-                <option value="Bug">Bug</option>
-                <option value="Feature Request">Feature Request</option>
-                <option value="Support">Support</option>
-                <option value="Other">Other</option>
+                {loadingCategory ? (
+                  <option value="" disabled>
+                    Loading...
+                  </option>
+                ) : categories.length > 0 ? (
+                  categories.map((c) => (
+                    <option key={c.id ?? c.name} value={c.id ?? c.name}>
+                      {c.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No categories available</option>
+                )}
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">
-                Assigned To
-              </label>
-              <select
-                name="assigned_to"
-                value={form.assigned_to}
-                onChange={handleChange}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 bg-white outline-none"
-              >
-                <option value="">Unassigned</option>
-                <option value="user_1">User 1</option>
-                <option value="user_2">User 2</option>
-                <option value="user_3">User 3</option>
-              </select>
-            </div>
+            {/* Assigned To: only show/select if user has permission */}
+            {canAssign ? (
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">
+                  Assigned To
+                </label>
+                <select
+                  name="assigned_to"
+                  value={form.assigned_to}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 bg-white outline-none"
+                >
+                  <option value="">Unassigned</option>
+                  {loadingAssigned ? (
+                    <option value="" disabled>
+                      Loading...
+                    </option>
+                  ) : assignedUsers.length > 0 ? (
+                    assignedUsers.map((u) => (
+                      <option
+                        key={u.id ?? u.username}
+                        value={u.id ?? u.username}
+                      >
+                        {u.name ?? u.username}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No users available</option>
+                  )}
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">
+                  Assigned To
+                </label>
+                <div className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-600">
+                  Unassigned — you don't have permission to assign staff
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Dept / Start / End */}
@@ -296,11 +420,17 @@ const CreateTicket = () => {
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 bg-white outline-none"
               >
                 <option value="">Select department</option>
-                <option value="IT">IT</option>
-                <option value="HR">HR</option>
-                <option value="Finance">Finance</option>
-                <option value="Sales">Sales</option>
-                <option value="Operation">Operation</option>
+                {loadingDepartments ? (
+                  <option value="" disabled>
+                    Loading...
+                  </option>
+                ) : (
+                  departments.map((d) => (
+                    <option key={d.id ?? d.name} value={d.id ?? d.name}>
+                      {d.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -331,14 +461,14 @@ const CreateTicket = () => {
             </div>
           </div>
 
-          {/* Multi Images / Attachments */}
+          {/* Images / Attachments */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Multi Images */}
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700">
                 Images
               </label>
               <input
+                ref={imageInputRef}
                 type="file"
                 name="images"
                 accept="image/*"
@@ -346,11 +476,9 @@ const CreateTicket = () => {
                 onChange={handleChange}
                 className="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
               />
-
-              {/* image previews grid */}
               {imagePreviews.length > 0 && (
                 <div className="mt-3 grid grid-cols-3 gap-3">
-                  {imagePreviews.map((p, i) => (
+                  {imagePreviews.map((p) => (
                     <div
                       key={p.id}
                       className="relative rounded-xl overflow-hidden border"
@@ -362,7 +490,7 @@ const CreateTicket = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => removeImageAt(i)}
+                        onClick={() => removeImageById(p.id)}
                         className="absolute top-1 right-1 inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/90 text-red-600 shadow"
                         title="Remove"
                       >
@@ -374,12 +502,12 @@ const CreateTicket = () => {
               )}
             </div>
 
-            {/* Attachments (docs, pdf, excel, txt, sql) */}
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700">
                 Attachments
               </label>
               <input
+                ref={attachmentInputRef}
                 type="file"
                 name="attachments"
                 multiple
@@ -387,8 +515,6 @@ const CreateTicket = () => {
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.sql"
                 className="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
               />
-
-              {/* attachments list */}
               {form.attachments && form.attachments.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {form.attachments.map((f, i) => (

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import axiosClient from "../../../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faSearch,
   faTrash,
   faCheck,
   faXmark,
@@ -25,8 +24,9 @@ const TicketChecker = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await axiosClient.get("/api/tickets");
+      const res = await axiosClient.get("/api/ticket/status/waitingapprove");
       setTickets(res.data || []);
+      console.log(res.data);
     } catch (err) {
       console.error("Error loading tickets:", err);
       setError("Failed to load tickets. Please try again.");
@@ -41,21 +41,20 @@ const TicketChecker = () => {
   }, []);
 
   const handleViewTicket = (id) => {
-    navigate(`/tickets/${id}`);
+    navigate(`/checkermaker/view/${id}`);
   };
 
   const statusBadgeClasses = (status) => {
     switch (status) {
-      case "Open":
-        return "bg-emerald-50 text-emerald-700 border border-emerald-100";
-      case "In Progress":
-        return "bg-blue-50 text-blue-700 border border-blue-100";
-      case "Resolved":
-        return "bg-violet-50 text-violet-700 border border-violet-100";
-      case "Closed":
-        return "bg-slate-100 text-slate-700 border border-slate-200";
       case "Waiting Approval":
+      case "Waiting Approve 1":
         return "bg-amber-50 text-amber-700 border border-amber-100";
+      case "Open":
+      case "Approved":
+        return "bg-emerald-50 text-emerald-700 border border-emerald-100";
+      case "Reject":
+      case "Rejected":
+        return "bg-rose-50 text-rose-700 border border-rose-100";
       default:
         return "bg-slate-50 text-slate-600 border border-slate-100";
     }
@@ -63,27 +62,20 @@ const TicketChecker = () => {
 
   const statusDotClasses = (status) => {
     switch (status) {
-      case "Open":
-        return "bg-emerald-500";
-      case "In Progress":
-        return "bg-blue-500";
-      case "Resolved":
-        return "bg-violet-500";
-      case "Closed":
-        return "bg-slate-500";
       case "Waiting Approval":
         return "bg-amber-500";
+      case "Open":
+      case "Approved":
+        return "bg-emerald-500";
+      case "Reject":
+      case "Rejected":
+        return "bg-rose-500";
       default:
         return "bg-slate-400";
     }
   };
 
-  // 🔍 filter by "Waiting Approval" + search
-  const waitingTickets = tickets.filter(
-    (t) => t.status === "Waiting Approval" // 👉 change this string if your status is different
-  );
-
-  const filteredTickets = waitingTickets.filter((t) => {
+  const filteredTickets = tickets.filter((t) => {
     const q = searchTerm.toLowerCase();
     return (
       t.subject?.toLowerCase().includes(q) ||
@@ -91,7 +83,8 @@ const TicketChecker = () => {
       t.priority?.toLowerCase().includes(q) ||
       t.category?.toLowerCase().includes(q) ||
       t.assigned_to?.toLowerCase().includes(q) ||
-      t.created_by?.toLowerCase().includes(q)
+      t.created_by?.toLowerCase().includes(q) ||
+      t.title?.toLowerCase().includes(q)
     );
   });
 
@@ -130,7 +123,7 @@ const TicketChecker = () => {
     try {
       setActionLoading(true);
       await Promise.all(
-        selectedIds.map((id) => axiosClient.delete(`/api/tickets/${id}`))
+        selectedIds.map((id) => axiosClient.delete(`/api/ticket/${id}`))
       );
       setTickets((prev) => prev.filter((t) => !selectedIds.includes(t.id)));
       setSelectedIds([]);
@@ -141,14 +134,14 @@ const TicketChecker = () => {
       setActionLoading(false);
     }
   };
-
   const handleBulkStatusChange = async (newStatus) => {
     if (selectedIds.length === 0) {
       alert("Please select at least one ticket.");
       return;
     }
 
-    const label = newStatus === "Approved" ? "approve" : "reject";
+    const isApprove = newStatus === "Approved";
+    const label = isApprove ? "approve" : "reject";
     if (
       !window.confirm(
         `Are you sure you want to ${label} selected tickets to "${newStatus}"?`
@@ -159,18 +152,48 @@ const TicketChecker = () => {
 
     try {
       setActionLoading(true);
-      await Promise.all(
-        selectedIds.map((id) =>
-          axiosClient.patch(`/api/tickets/${id}`, { status: newStatus })
-        )
+
+      const calls = selectedIds.map((id) =>
+        isApprove
+          ? axiosClient.patch(`/api/ticket/${id}/approve`)
+          : axiosClient.patch(`/api/ticket/${id}/reject`)
       );
 
+      const results = await Promise.allSettled(calls);
+
+      const succeeded = [];
+      const failed = [];
+      results.forEach((r, idx) => {
+        if (r.status === "fulfilled") {
+          succeeded.push(selectedIds[idx]);
+        } else {
+          failed.push(selectedIds[idx]);
+          console.error(
+            `Action failed for ticket ${selectedIds[idx]}`,
+            r.reason
+          );
+        }
+      });
+
       setTickets((prev) =>
-        prev.map((t) =>
-          selectedIds.includes(t.id) ? { ...t, status: newStatus } : t
-        )
+        prev.map((t) => {
+          if (succeeded.includes(t.id)) {
+            return {
+              ...t,
+              status: isApprove ? "Open" : "Reject",
+            };
+          }
+          return t;
+        })
       );
-      setSelectedIds([]);
+
+      setSelectedIds((prev) => prev.filter((id) => !succeeded.includes(id)));
+
+      if (failed.length > 0) {
+        alert(
+          `Failed to ${label} ${failed.length} ticket(s). See console for details.`
+        );
+      }
     } catch (err) {
       console.error(`Error updating tickets to ${newStatus}:`, err);
       alert(`Failed to ${label} some tickets.`);
@@ -281,7 +304,8 @@ const TicketChecker = () => {
                 <th className="px-4 py-3">Subject</th>
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Priority</th>
-                <th className="px-4 py-3">Create By</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Assigned To</th>
                 <th className="px-4 py-3">Created At</th>
               </tr>
             </thead>
@@ -335,7 +359,7 @@ const TicketChecker = () => {
                         {t.id}
                       </td>
                       <td className="px-4 py-3 text-slate-800">
-                        {t.subject || "-"}
+                        {t.title || t.subject || "-"}
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         {t.category || "-"}
@@ -383,8 +407,8 @@ const TicketChecker = () => {
 
         <div className="px-4 py-3 text-xs text-slate-500 bg-slate-50 flex justify-between items-center">
           <span>
-            Showing {filteredTickets.length} of {waitingTickets.length} tickets
-            waiting approval
+            Showing {filteredTickets.length} of {tickets.length} tickets waiting
+            approval
           </span>
           <span className="text-slate-400">Page 1 of 1</span>
         </div>

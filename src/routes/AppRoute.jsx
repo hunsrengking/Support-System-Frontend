@@ -54,7 +54,7 @@ const AppRoute = () => {
               <Route
                 index
                 element={
-                  <RequirePermission perm="view_dashboard">
+                  <RequirePermission perm="VIEW_DASHBOARD">
                     <Dashboard />
                   </RequirePermission>
                 }
@@ -62,7 +62,7 @@ const AppRoute = () => {
               <Route
                 path="dashboard"
                 element={
-                  <RequirePermission perm="view_dashboard">
+                  <RequirePermission perm="VIEW_DASHBOARD">
                     <Dashboard />
                   </RequirePermission>
                 }
@@ -71,7 +71,7 @@ const AppRoute = () => {
               <Route
                 path="ticket"
                 element={
-                  <RequirePermission perm="view_ticket">
+                  <RequirePermission perm="VIEW_TICKET">
                     <Ticket />
                   </RequirePermission>
                 }
@@ -79,7 +79,7 @@ const AppRoute = () => {
               <Route
                 path="/ticket/create"
                 element={
-                  <RequirePermission perm="view_ticket">
+                  <RequirePermission perm="VIEW_TICKET">
                     <CreateTicket />
                   </RequirePermission>
                 }
@@ -87,7 +87,7 @@ const AppRoute = () => {
               <Route
                 path="/ticket/views/:id"
                 element={
-                  <RequirePermission perm="view_ticket">
+                  <RequirePermission perm="VIEW_TICKET">
                     <ViewTicket />
                   </RequirePermission>
                 }
@@ -95,15 +95,15 @@ const AppRoute = () => {
               <Route
                 path="/checkermaker"
                 element={
-                  <RequirePermission perm="view_ticket">
+                  <RequirePermission perm="VIEW_TICKET">
                     <TicketChecker />
                   </RequirePermission>
                 }
               />
               <Route
-                path="/checkermaker/view"
+                path="/checkermaker/view/:id"
                 element={
-                  <RequirePermission perm="view_ticket">
+                  <RequirePermission perm="VIEW_TICKET">
                     <TicketCheckerView />
                   </RequirePermission>
                 }
@@ -112,7 +112,7 @@ const AppRoute = () => {
               <Route
                 path="/users"
                 element={
-                  <RequirePermission perm="view_users">
+                  <RequirePermission perm="VIEW_USER">
                     <Users />
                   </RequirePermission>
                 }
@@ -121,7 +121,7 @@ const AppRoute = () => {
               <Route
                 path="/users/create"
                 element={
-                  <RequirePermission perm="create_users">
+                  <RequirePermission perm="CREATE_USER">
                     <UserCreate />
                   </RequirePermission>
                 }
@@ -130,9 +130,9 @@ const AppRoute = () => {
               <Route path="/users/:id/view" element={<UsersView />} />
 
               <Route
-                path="settings/users/:id/edit"
+                path="/users/:id/edit"
                 element={
-                  <RequirePermission perm="edit_users">
+                  <RequirePermission perm="UPDATE_USER">
                     <UserEdit />
                   </RequirePermission>
                 }
@@ -141,7 +141,7 @@ const AppRoute = () => {
               <Route
                 path="setting"
                 element={
-                  <RequirePermission perm="view_setting">
+                  <RequirePermission perm="VIEW_SETTING">
                     <Settings />
                   </RequirePermission>
                 }
@@ -150,7 +150,7 @@ const AppRoute = () => {
               <Route
                 path="settings/roles"
                 element={
-                  <RequirePermission perm="view_roles">
+                  <RequirePermission perm="VIEW_ROLES">
                     <RoleList />
                   </RequirePermission>
                 }
@@ -158,7 +158,7 @@ const AppRoute = () => {
               <Route
                 path="settings/roles/create"
                 element={
-                  <RequirePermission perm="create_roles">
+                  <RequirePermission perm="CREATE_ROLES">
                     <RoleCreate />
                   </RequirePermission>
                 }
@@ -166,7 +166,7 @@ const AppRoute = () => {
               <Route
                 path="settings/roles/:id/permissions"
                 element={
-                  <RequirePermission perm="edit_permissions">
+                  <RequirePermission perm="UPDATE_PERMISSIONS">
                     <RolePermission />
                   </RequirePermission>
                 }

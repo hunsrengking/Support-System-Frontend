@@ -1,3 +1,4 @@
+//src/utill/permission.js
 export const hasPermission = (perm) => {
   if (!perm) return false;
   try {
@@ -6,7 +7,7 @@ export const hasPermission = (perm) => {
       return permArr.includes(perm);
     }
   } catch (e) {
-    
+    console.log(e)
   }
   try {
     const storedUser = JSON.parse(localStorage.getItem("app_auth_user"));

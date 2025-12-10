@@ -1,7 +1,12 @@
 // src/components/Header.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axiosClient from "../services/axiosClient";
+import axiosClient, {
+  getAccessToken,
+  isTokenExpired,
+  clearTokens,
+  setLogoutCallback,
+} from "../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBars,
@@ -14,7 +19,9 @@ const Header = ({ toggleSidebar }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const navigate = useNavigate();
+  const menuRef = useRef(null);
 
+  // Read stored user safely
   const storedUser = (() => {
     try {
       return JSON.parse(localStorage.getItem("app_auth_user")) || null;
@@ -24,47 +31,19 @@ const Header = ({ toggleSidebar }) => {
   })();
 
   const user = {
-    id: storedUser?.id || storedUser?.id || "id",
+    id: storedUser?.id || "id",
     name: storedUser?.username || storedUser?.name || "User",
-    role: storedUser?.role?.name || "Role",
+    role: storedUser?.role?.name || storedUser?.role || "Role",
     permissions: Array.isArray(storedUser?.permissions)
       ? storedUser.permissions.map((p) => p.name)
       : [],
   };
-  console.log(user);
-  const handleLogout = async () => {
-    setShowUserMenu(false);
-    setLoggingOut(true);
 
-    try {
-      const token =
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("token") ||
-        null;
-
-      if (token) {
-        await axiosClient.post("/logout", null, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      } else {
-        console.warn(
-          "No token found in localStorage — skipping backend logout call."
-        );
-      }
-    } catch (err) {
-      console.warn(
-        "Logout request failed (continuing to clear local state):",
-        err
-      );
-    } finally {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("token");
-      localStorage.removeItem("app_auth_user");
-      localStorage.removeItem("permissions");
-      localStorage.removeItem("refresh_token");
-
+  // Register logout callback so axiosClient can notify the app when refresh fails
+  useEffect(() => {
+    setLogoutCallback(() => {
+      // ensure cleanup and navigation
+      clearTokens();
       if (
         axiosClient.defaults &&
         axiosClient.defaults.headers &&
@@ -72,11 +51,82 @@ const Header = ({ toggleSidebar }) => {
       ) {
         delete axiosClient.defaults.headers.common["Authorization"];
       }
+      navigate("/login", { replace: true });
+    });
 
+    // cleanup: reset to noop on unmount
+    return () => setLogoutCallback(() => {});
+  }, [navigate]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  // Auto-logout if token expired (check on mount + poll)
+  useEffect(() => {
+    const checkAndLogoutIfExpired = () => {
+      const token = getAccessToken();
+      if (!token) return;
+      if (isTokenExpired(token)) {
+        handleForcedLogout();
+      }
+    };
+
+    checkAndLogoutIfExpired();
+    const iv = setInterval(checkAndLogoutIfExpired, 30_000); // every 30s
+    return () => clearInterval(iv);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleForcedLogout = () => {
+    clearTokens();
+    if (
+      axiosClient.defaults &&
+      axiosClient.defaults.headers &&
+      axiosClient.defaults.headers.common
+    ) {
+      delete axiosClient.defaults.headers.common["Authorization"];
+    }
+    navigate("/login", { replace: true });
+  };
+
+  const handleLogout = async () => {
+    setShowUserMenu(false);
+    setLoggingOut(true);
+
+    try {
+      const token = getAccessToken();
+      if (token) {
+        await axiosClient.post("/logout", null, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch (err) {
+      console.warn(
+        "Logout request failed (continuing to clear local state):",
+        err
+      );
+    } finally {
+      clearTokens();
+      if (
+        axiosClient.defaults &&
+        axiosClient.defaults.headers &&
+        axiosClient.defaults.headers.common
+      ) {
+        delete axiosClient.defaults.headers.common["Authorization"];
+      }
       setLoggingOut(false);
-      navigate("/login");
+      navigate("/login", { replace: true });
     }
   };
+
   return (
     <header className="bg-white/80 backdrop-blur border-b border-slate-200 z-20">
       <div className="flex items-center justify-between px-6 py-3.5">
@@ -109,7 +159,7 @@ const Header = ({ toggleSidebar }) => {
           </button>
 
           {/* User */}
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowUserMenu((prev) => !prev)}
               className="flex items-center space-x-2 hover:bg-slate-100 rounded-full px-2.5 py-1.5"
@@ -128,39 +178,43 @@ const Header = ({ toggleSidebar }) => {
               </div>
             </button>
 
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 shadow-lg rounded-xl py-2">
-                <Link
-                  to={`/users/${storedUser?.id}/view`}
-                  onClick={() => setShowUserMenu(false)}
-                  className="block px-4 py-2 text-sm hover:bg-blue-50"
-                >
-                  Profile
-                </Link>
+            {/* Animated menu: scale + fade */}
+            <div
+              className={`origin-top-right absolute right-0 mt-2 w-52 bg-white border border-slate-200 shadow-lg rounded-xl py-2 transform transition-all duration-150 ${
+                showUserMenu
+                  ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
+              }`}
+              aria-hidden={!showUserMenu}
+            >
+              <Link
+                to={`/users/${user.id}/view`}
+                onClick={() => setShowUserMenu(false)}
+                className="block px-4 py-2 text-sm hover:bg-blue-50"
+              >
+                Profile
+              </Link>
 
-                <Link
-                  to="/setting"
-                  onClick={() => setShowUserMenu(false)}
-                  className="block px-4 py-2 text-sm hover:bg-blue-50"
-                >
-                  Settings
-                </Link>
+              <Link
+                to="/setting"
+                onClick={() => setShowUserMenu(false)}
+                className="block px-4 py-2 text-sm hover:bg-blue-50"
+              >
+                Settings
+              </Link>
 
-                <button
-                  onClick={handleLogout}
-                  disabled={loggingOut}
-                  className={`flex items-center w-full text-left px-4 py-2 text-sm ${
-                    loggingOut
-                      ? "text-gray-400"
-                      : "text-red-600 hover:bg-red-50"
-                  }`}
-                  aria-busy={loggingOut}
-                >
-                  <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
-                  {loggingOut ? "Logging out..." : "Logout"}
-                </button>
-              </div>
-            )}
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm ${
+                  loggingOut ? "text-gray-400" : "text-red-600 hover:bg-red-50"
+                }`}
+                aria-busy={loggingOut}
+              >
+                <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
+                {loggingOut ? "Logging out..." : "Logout"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
