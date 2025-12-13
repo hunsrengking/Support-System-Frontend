@@ -17,11 +17,17 @@ import {
 
 const Header = ({ toggleSidebar }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotif, setShowNotif] = useState(false); // ✅ ADD
   const [loggingOut, setLoggingOut] = useState(false);
   const navigate = useNavigate();
-  const menuRef = useRef(null);
 
-  // Read stored user safely
+  const menuRef = useRef(null);
+  const notifRef = useRef(null); // ✅ ADD
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]); // ✅ ADD
+
+  // ===== USER =====
   const storedUser = (() => {
     try {
       return JSON.parse(localStorage.getItem("app_auth_user")) || null;
@@ -39,68 +45,80 @@ const Header = ({ toggleSidebar }) => {
       : [],
   };
 
-  // Register logout callback so axiosClient can notify the app when refresh fails
+  // ===== LOAD NOTIFICATIONS =====
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [listRes, countRes] = await Promise.all([
+          axiosClient.get("/api/notifications"),
+          axiosClient.get("/api/notifications/unread-count"),
+        ]);
+        setNotifications(listRes.data || []);
+        setUnreadCount(countRes.data.count || 0);
+      } catch (err) {
+        console.error("Notification load error:", err);
+      }
+    };
+
+    load();
+    const iv = setInterval(load, 20000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // ===== LOGOUT CALLBACK =====
   useEffect(() => {
     setLogoutCallback(() => {
-      // ensure cleanup and navigation
       clearTokens();
-      if (
-        axiosClient.defaults &&
-        axiosClient.defaults.headers &&
-        axiosClient.defaults.headers.common
-      ) {
-        delete axiosClient.defaults.headers.common["Authorization"];
-      }
+      delete axiosClient.defaults.headers.common["Authorization"];
       navigate("/login", { replace: true });
     });
-
-    // cleanup: reset to noop on unmount
     return () => setLogoutCallback(() => {});
   }, [navigate]);
 
-  // Close menu when clicking outside
+  // ===== CLICK OUTSIDE =====
   useEffect(() => {
-    const onDocClick = (e) => {
+    const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setShowUserMenu(false);
       }
-    };
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, []);
-
-  // Auto-logout if token expired (check on mount + poll)
-  useEffect(() => {
-    const checkAndLogoutIfExpired = () => {
-      const token = getAccessToken();
-      if (!token) return;
-      if (isTokenExpired(token)) {
-        handleForcedLogout();
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotif(false);
       }
     };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
 
-    checkAndLogoutIfExpired();
-    const iv = setInterval(checkAndLogoutIfExpired, 30_000); // every 30s
+  // ===== TOKEN CHECK =====
+  useEffect(() => {
+    const check = () => {
+      const token = getAccessToken();
+      if (token && isTokenExpired(token)) handleForcedLogout();
+    };
+    check();
+    const iv = setInterval(check, 30000);
     return () => clearInterval(iv);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleForcedLogout = () => {
     clearTokens();
-    if (
-      axiosClient.defaults &&
-      axiosClient.defaults.headers &&
-      axiosClient.defaults.headers.common
-    ) {
-      delete axiosClient.defaults.headers.common["Authorization"];
-    }
+    delete axiosClient.defaults.headers.common["Authorization"];
     navigate("/login", { replace: true });
+  };
+
+  const handleRead = async (n) => {
+    try {
+      await axiosClient.put(`/api/notifications/${n.id}/read`);
+      if (n.link) navigate(n.link);
+      setShowNotif(false);
+    } catch (err) {
+      console.error("Read notification error:", err);
+    }
   };
 
   const handleLogout = async () => {
     setShowUserMenu(false);
     setLoggingOut(true);
-
     try {
       const token = getAccessToken();
       if (token) {
@@ -108,20 +126,10 @@ const Header = ({ toggleSidebar }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
-    } catch (err) {
-      console.warn(
-        "Logout request failed (continuing to clear local state):",
-        err
-      );
+    } catch {
     } finally {
       clearTokens();
-      if (
-        axiosClient.defaults &&
-        axiosClient.defaults.headers &&
-        axiosClient.defaults.headers.common
-      ) {
-        delete axiosClient.defaults.headers.common["Authorization"];
-      }
+      delete axiosClient.defaults.headers.common["Authorization"];
       setLoggingOut(false);
       navigate("/login", { replace: true });
     }
@@ -135,9 +143,8 @@ const Header = ({ toggleSidebar }) => {
           <button
             onClick={toggleSidebar}
             className="p-2 hover:bg-slate-100 rounded-lg"
-            aria-label="Toggle sidebar"
           >
-            <FontAwesomeIcon icon={faBars} className="h-5 w-5 text-slate-700" />
+            <FontAwesomeIcon icon={faBars} />
           </button>
 
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">
@@ -147,54 +154,73 @@ const Header = ({ toggleSidebar }) => {
 
         {/* Right */}
         <div className="flex items-center space-x-4 relative">
-          {/* Notifications */}
-          <button
-            className="relative p-2 hover:bg-slate-100 rounded-full"
-            aria-label="Notifications"
-          >
-            <FontAwesomeIcon icon={faBell} className="h-5 w-5 text-slate-600" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 py-[2px] rounded-full">
-              5
-            </span>
-          </button>
+          {/* 🔔 Notifications */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setShowNotif((p) => !p)}
+              className="relative p-2 hover:bg-slate-100 rounded-full"
+            >
+              <FontAwesomeIcon icon={faBell} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 py-[2px] rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotif && (
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 shadow-lg rounded-xl py-2 z-50">
+                {notifications.length === 0 && (
+                  <div className="px-4 py-3 text-sm text-slate-500">
+                    No notifications
+                  </div>
+                )}
+
+                {notifications.map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => handleRead(n)}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 ${
+                      !n.is_read ? "font-semibold" : "text-slate-500"
+                    }`}
+                  >
+                    <div>{n.title}</div>
+                    <div className="text-xs text-slate-500 truncate">
+                      {n.message}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* User */}
           <div className="relative" ref={menuRef}>
             <button
-              onClick={() => setShowUserMenu((prev) => !prev)}
+              onClick={() => setShowUserMenu((p) => !p)}
               className="flex items-center space-x-2 hover:bg-slate-100 rounded-full px-2.5 py-1.5"
-              aria-haspopup="true"
-              aria-expanded={showUserMenu}
             >
               <div className="bg-blue-100 text-blue-700 rounded-full h-8 w-8 flex items-center justify-center">
                 <FontAwesomeIcon icon={faUser} />
               </div>
 
               <div className="hidden sm:flex flex-col items-start">
-                <span className="text-xs font-medium text-slate-800">
-                  {user.name}
-                </span>
+                <span className="text-xs font-medium">{user.name}</span>
                 <span className="text-[11px] text-slate-500">{user.role}</span>
               </div>
             </button>
 
-            {/* Animated menu: scale + fade */}
             <div
-              className={`origin-top-right absolute right-0 mt-2 w-52 bg-white border border-slate-200 shadow-lg rounded-xl py-2 transform transition-all duration-150 ${
-                showUserMenu
-                  ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                  : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
+              className={`absolute right-0 mt-2 w-52 bg-white  shadow rounded-xl py-2 transition ${
+                showUserMenu ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
-              aria-hidden={!showUserMenu}
             >
               <Link
                 to={`/users/${user.id}/view`}
-                onClick={() => setShowUserMenu(false)}
                 className="block px-4 py-2 text-sm hover:bg-blue-50"
               >
                 Profile
               </Link>
-
               <Link
                 to="/setting"
                 onClick={() => setShowUserMenu(false)}
@@ -202,17 +228,13 @@ const Header = ({ toggleSidebar }) => {
               >
                 Settings
               </Link>
-
               <button
                 onClick={handleLogout}
                 disabled={loggingOut}
-                className={`flex items-center w-full text-left px-4 py-2 text-sm ${
-                  loggingOut ? "text-gray-400" : "text-red-600 hover:bg-red-50"
-                }`}
-                aria-busy={loggingOut}
+                className="flex w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
               >
                 <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
-                {loggingOut ? "Logging out..." : "Logout"}
+                Logout
               </button>
             </div>
           </div>

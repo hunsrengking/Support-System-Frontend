@@ -447,9 +447,9 @@ const ViewTicket = () => {
                   />
                 )}
 
-                {(ticket.priority_name || ticket.priority_id) && (
+                {(ticket.priority || ticket.priority_id) && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
-                    Priority: {ticket.priority_name ?? ticket.priority_id}
+                    Priority: {ticket.priority ?? ticket.priority_id}
                   </span>
                 )}
               </div>
@@ -479,7 +479,7 @@ const ViewTicket = () => {
                     Created At
                   </p>
                   <p className="text-slate-800">
-                    {formatDate(ticket.create_date)}
+                    {formatDate(ticket.created_at)}
                   </p>
                 </div>
               </div>
@@ -590,12 +590,7 @@ const ViewTicket = () => {
                     Priority
                   </p>
                   {!editing ? (
-                    <p className="text-slate-800">
-                      {ticket.priority_name ??
-                        ticket.priority ??
-                        ticket.priority_id ??
-                        "-"}
-                    </p>
+                    <p className="text-slate-800">{ticket.priority ?? "-"}</p>
                   ) : loadingPriority ? (
                     <p className="text-sm text-slate-400">
                       Loading priorities...

@@ -2,8 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faCheck, faXmark, faTicket } from "@fortawesome/free-solid-svg-icons";
+import {
+  faTrash,
+  faCheck,
+  faXmark,
+  faTicket,
+} from "@fortawesome/free-solid-svg-icons";
 import Spinner from "../../../components/common/Spinner";
+import { formatDate } from "../../../utils/formatdate";
 
 const TicketChecker = () => {
   const navigate = useNavigate();
@@ -41,14 +47,7 @@ const TicketChecker = () => {
   const statusBadgeClasses = (status) => {
     switch (status) {
       case "Waiting Approval":
-      case "Waiting Approve 1":
         return "bg-amber-50 text-amber-700 border border-amber-100";
-      case "Open":
-      case "Approved":
-        return "bg-emerald-50 text-emerald-700 border border-emerald-100";
-      case "Reject":
-      case "Rejected":
-        return "bg-rose-50 text-rose-700 border border-rose-100";
       default:
         return "bg-slate-50 text-slate-600 border border-slate-100";
     }
@@ -58,12 +57,6 @@ const TicketChecker = () => {
     switch (status) {
       case "Waiting Approval":
         return "bg-amber-500";
-      case "Open":
-      case "Approved":
-        return "bg-emerald-500";
-      case "Reject":
-      case "Rejected":
-        return "bg-rose-500";
       default:
         return "bg-slate-400";
     }
@@ -158,9 +151,11 @@ const TicketChecker = () => {
     }
 
     const isApprove = newStatus === "Approved";
-    const label = isApprove ? "approve" : "reject";
+    const label = isApprove ? "approve" : isReject ? "reject" : "delete";
 
-    if (!window.confirm(`Are you sure you want to ${label} selected tickets?`)) {
+    if (
+      !window.confirm(`Are you sure you want to ${label} selected tickets?`)
+    ) {
       return;
     }
 
@@ -219,8 +214,12 @@ const TicketChecker = () => {
               <FontAwesomeIcon icon={faTicket} />
               Ticket Checker
             </h1>
-            <p className="text-sm text-slate-500">Tickets waiting for approval</p>
-            <p className="text-xs text-slate-400 mt-1">Selected: {selectedIds.length}</p>
+            <p className="text-sm text-slate-500">
+              Tickets waiting for approval
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Selected: {selectedIds.length}
+            </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -320,7 +319,7 @@ const TicketChecker = () => {
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Priority</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Assigned To</th>
+                <th className="px-4 py-3">Create By</th>
                 <th className="px-4 py-3">Created At</th>
               </tr>
             </thead>
@@ -329,7 +328,10 @@ const TicketChecker = () => {
               {/* PAGE LOADING */}
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-400">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-10 text-center text-sm text-slate-400"
+                  >
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Spinner size={28} />
                       <span>Loading tickets...</span>
@@ -338,7 +340,10 @@ const TicketChecker = () => {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-red-500">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-sm text-red-500"
+                  >
                     {error}
                     <button
                       onClick={loadTickets}
@@ -369,7 +374,9 @@ const TicketChecker = () => {
                         />
                       </td>
 
-                      <td className="px-4 py-3 text-slate-700 font-medium">{t.id}</td>
+                      <td className="px-4 py-3 text-slate-700 font-medium">
+                        {t.id}
+                      </td>
 
                       <td className="px-4 py-3 text-slate-800">
                         {t.title || t.subject || "-"}
@@ -399,11 +406,11 @@ const TicketChecker = () => {
                       </td>
 
                       <td className="px-4 py-3 text-slate-700">
-                        {t.assigned_to || "-"}
+                        {t.created_by || "-"}
                       </td>
 
                       <td className="px-4 py-3 text-slate-600">
-                        {t.created_at || "-"}
+                        {formatDate(t.created_at || "-")}
                       </td>
                     </tr>
                   );
