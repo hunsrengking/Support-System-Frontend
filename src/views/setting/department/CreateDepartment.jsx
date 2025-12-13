@@ -2,23 +2,24 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserShield } from "@fortawesome/free-solid-svg-icons";
+import { faBuilding } from "@fortawesome/free-solid-svg-icons";
 
-const Telegram = () => {
+const DepartmentCreate = () => {
   const navigate = useNavigate();
-  const [roleName, setRoleName] = useState("");
+  const [departmentName, setDepartmentName] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleCreate = async (e) => {
     e.preventDefault();
 
     try {
-      await axiosClient.post("/api/role", {
-        name: roleName,
+      await axiosClient.post("/api/department", {
+        name: departmentName,
         description,
       });
-      navigate("/settings/roles");
+      navigate("/settings/departments");
     } catch (error) {
-      console.error("Create role error:", error);
+      console.error("Create department error:", error);
     }
   };
 
@@ -27,11 +28,11 @@ const Telegram = () => {
       {/* Header */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
         <h1 className="text-2xl font-semibold flex items-center gap-2 text-slate-900">
-          <FontAwesomeIcon icon={faUserShield} />
-          Create New Role
+          <FontAwesomeIcon icon={faBuilding} />
+          Create New Department
         </h1>
         <p className="text-sm text-slate-500">
-          Add a new role into your system.
+          Add a new department into your system.
         </p>
       </div>
 
@@ -41,16 +42,28 @@ const Telegram = () => {
         className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4 max-w-xl"
       >
         <div>
-          <label className="text-sm text-slate-600">Telegram</label>
+          <label className="text-sm text-slate-600">Department Name</label>
           <input
             type="text"
             required
-            value={roleName}
-            onChange={(e) => setRoleName(e.target.value)}
+            value={departmentName}
+            onChange={(e) => setDepartmentName(e.target.value)}
             className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
-            placeholder="Telegram id"
+            placeholder="E.g. Human Resources, Sales, IT"
           />
         </div>
+
+        <div>
+          <label className="text-sm text-slate-600">Description</label>
+          <textarea
+            rows="3"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full mt-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+            placeholder="Short description of this department..."
+          ></textarea>
+        </div>
+
         <div className="flex gap-3">
           <button
             type="submit"
@@ -61,7 +74,7 @@ const Telegram = () => {
 
           <button
             type="button"
-            onClick={() => navigate("/settings/roles")}
+            onClick={() => navigate("/settings/departments")}
             className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 flex items-center gap-2"
           >
             Cancel
@@ -72,4 +85,4 @@ const Telegram = () => {
   );
 };
 
-export default Telegram;
+export default DepartmentCreate;

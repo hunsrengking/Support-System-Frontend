@@ -1,28 +1,40 @@
+// src/services/axiosClient.js
 import axios from "axios";
 
+const STORAGE_KEY = "app_auth_token";
+const USER_KEY = "app_auth_user";
+const REFRESH_KEY = "refresh_token";
+
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || "",
   timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
 });
-export const getAccessToken = () =>
-  localStorage.getItem("access_token") || localStorage.getItem("token") || null;
 
-export const getRefreshToken = () => localStorage.getItem("refresh_token") || null;
+export const getAccessToken = () =>
+  // keep backward compatibility with older keys
+  localStorage.getItem(STORAGE_KEY) ||
+  localStorage.getItem("access_token") ||
+  localStorage.getItem("token") ||
+  null;
+
+export const getRefreshToken = () => localStorage.getItem(REFRESH_KEY) || null;
 
 export const setTokens = ({ access_token, refresh_token, user } = {}) => {
-  if (access_token) localStorage.setItem("access_token", access_token);
-  if (refresh_token) localStorage.setItem("refresh_token", refresh_token);
-  if (user) localStorage.setItem("app_auth_user", JSON.stringify(user));
+  // always persist under unified keys
+  if (access_token) localStorage.setItem(STORAGE_KEY, access_token);
+  if (refresh_token) localStorage.setItem(REFRESH_KEY, refresh_token);
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
 export const clearTokens = () => {
+  localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem("access_token");
   localStorage.removeItem("token");
-  localStorage.removeItem("refresh_token");
-  localStorage.removeItem("app_auth_user");
+  localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(USER_KEY);
   localStorage.removeItem("permissions");
 };
 
@@ -46,15 +58,10 @@ export const isTokenExpired = (token, offsetSeconds = 10) => {
   return payload.exp <= now + offsetSeconds;
 };
 
-
 let isRefreshing = false;
 let refreshPromise = null;
 let subscribers = [];
 
-/**
- * call all queued requests after refresh
- * @param {string|null} token
- */
 const onRefreshed = (token) => {
   subscribers.forEach((cb) => cb(token));
   subscribers = [];
@@ -64,7 +71,7 @@ const addSubscriber = (cb) => {
   subscribers.push(cb);
 };
 
-let logoutCallback = () => { };
+let logoutCallback = () => {};
 export const setLogoutCallback = (fn) => {
   if (typeof fn === "function") logoutCallback = fn;
 };
@@ -73,12 +80,14 @@ const refreshTokenRequest = async () => {
   const refreshToken = getRefreshToken();
   if (!refreshToken) throw new Error("No refresh token available");
 
-  // Compose refresh URL from axiosClient baseURL
-  const base = (axiosClient.defaults && axiosClient.defaults.baseURL) || "";
-  const baseNoTrailing = base.replace(/\/$/, "");
-  const refreshUrl = `${baseNoTrailing}/refresh`;
+  // Use axios (not axiosClient) to avoid interceptors on refresh request
+  const base =
+    axiosClient.defaults && axiosClient.defaults.baseURL
+      ? axiosClient.defaults.baseURL.replace(/\/$/, "")
+      : "";
+  const refreshUrl = `${base}/refresh`.replace(/\/{2,}/g, "/");
 
-  // If your backend expects refresh token in body change here.
+  // If your backend expects refresh in headers or form, change this body accordingly.
   return axios.post(refreshUrl, { refresh_token: refreshToken });
 };
 
@@ -112,11 +121,12 @@ axiosClient.interceptors.response.use(
     }
     originalRequest._retry = true;
 
-    // If already refreshing, queue this request and return a promise that'll retry when done
+    // If already refreshing, queue this request and retry after refresh
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         addSubscriber((token) => {
           if (token) {
+            originalRequest.headers = originalRequest.headers || {};
             originalRequest.headers["Authorization"] = `Bearer ${token}`;
             resolve(axiosClient(originalRequest));
           } else {
@@ -130,7 +140,7 @@ axiosClient.interceptors.response.use(
     isRefreshing = true;
     refreshPromise = refreshTokenRequest()
       .then((res) => {
-        // backend expected shape: { access_token, refresh_token, user? } OR { token, ...}
+        // backend expected shape: { access_token, refresh_token, user } OR { token, ... }
         const newAccess = res.data.access_token || res.data.token;
         const newRefresh = res.data.refresh_token || getRefreshToken();
 
@@ -138,11 +148,19 @@ axiosClient.interceptors.response.use(
           throw new Error("Refresh did not return new access token");
         }
 
-        setTokens({ access_token: newAccess, refresh_token: newRefresh, user: res.data.user });
+        setTokens({
+          access_token: newAccess,
+          refresh_token: newRefresh,
+          user: res.data.user,
+        });
 
+        // update axios defaults so subsequent requests have header by default
         if (!axiosClient.defaults.headers) axiosClient.defaults.headers = {};
-        if (!axiosClient.defaults.headers.common) axiosClient.defaults.headers.common = {};
-        axiosClient.defaults.headers.common["Authorization"] = `Bearer ${newAccess}`;
+        if (!axiosClient.defaults.headers.common)
+          axiosClient.defaults.headers.common = {};
+        axiosClient.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${newAccess}`;
 
         onRefreshed(newAccess);
         return newAccess;
@@ -152,7 +170,6 @@ axiosClient.interceptors.response.use(
         try {
           logoutCallback();
         } catch (e) {
-          // swallow callback errors
           console.warn("logoutCallback threw:", e);
         }
         onRefreshed(null);
@@ -165,6 +182,7 @@ axiosClient.interceptors.response.use(
 
     try {
       const newToken = await refreshPromise;
+      originalRequest.headers = originalRequest.headers || {};
       originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
       return axiosClient(originalRequest);
     } catch (err) {
@@ -174,4 +192,3 @@ axiosClient.interceptors.response.use(
 );
 
 export default axiosClient;
-

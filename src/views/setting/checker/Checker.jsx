@@ -1,14 +1,9 @@
-// src/views/settings/users/TicketChecker.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faTrash,
-  faCheck,
-  faXmark,
-  faTicket,
-} from "@fortawesome/free-solid-svg-icons";
+import { faTrash, faCheck, faXmark, faTicket } from "@fortawesome/free-solid-svg-icons";
+import Spinner from "../../../components/common/Spinner";
 
 const TicketChecker = () => {
   const navigate = useNavigate();
@@ -26,7 +21,6 @@ const TicketChecker = () => {
       setError(null);
       const res = await axiosClient.get("/api/ticket/status/waitingapprove");
       setTickets(res.data || []);
-      console.log(res.data);
     } catch (err) {
       console.error("Error loading tickets:", err);
       setError("Failed to load tickets. Please try again.");
@@ -111,6 +105,7 @@ const TicketChecker = () => {
     }
   };
 
+  // --- BULK DELETE ---
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) {
       alert("Please select at least one ticket.");
@@ -122,18 +117,40 @@ const TicketChecker = () => {
 
     try {
       setActionLoading(true);
-      await Promise.all(
-        selectedIds.map((id) => axiosClient.delete(`/api/ticket/${id}`))
+
+      const calls = selectedIds.map((id) =>
+        axiosClient.delete(`/api/ticket/${id}`)
       );
-      setTickets((prev) => prev.filter((t) => !selectedIds.includes(t.id)));
-      setSelectedIds([]);
+
+      const results = await Promise.allSettled(calls);
+
+      const succeeded = [];
+      const failed = [];
+
+      results.forEach((r, idx) => {
+        if (r.status === "fulfilled") succeeded.push(selectedIds[idx]);
+        else failed.push(selectedIds[idx]);
+      });
+
+      if (succeeded.length > 0) {
+        setTickets((prev) => prev.filter((t) => !succeeded.includes(t.id)));
+        setSelectedIds((prev) => prev.filter((id) => !succeeded.includes(id)));
+      }
+
+      await loadTickets();
+
+      if (failed.length > 0) {
+        alert(`Failed to delete ${failed.length} ticket(s).`);
+      }
     } catch (err) {
-      console.error("Error deleting tickets:", err);
-      alert("Failed to delete some tickets.");
+      console.error(err);
+      alert("Delete error.");
     } finally {
       setActionLoading(false);
     }
   };
+
+  // --- BULK APPROVE / REJECT ---
   const handleBulkStatusChange = async (newStatus) => {
     if (selectedIds.length === 0) {
       alert("Please select at least one ticket.");
@@ -142,11 +159,8 @@ const TicketChecker = () => {
 
     const isApprove = newStatus === "Approved";
     const label = isApprove ? "approve" : "reject";
-    if (
-      !window.confirm(
-        `Are you sure you want to ${label} selected tickets to "${newStatus}"?`
-      )
-    ) {
+
+    if (!window.confirm(`Are you sure you want to ${label} selected tickets?`)) {
       return;
     }
 
@@ -155,48 +169,41 @@ const TicketChecker = () => {
 
       const calls = selectedIds.map((id) =>
         isApprove
-          ? axiosClient.patch(`/api/ticket/${id}/approve`)
-          : axiosClient.patch(`/api/ticket/${id}/reject`)
+          ? axiosClient.patch(`/api/ticket/${id}/approve`, null)
+          : axiosClient.patch(`/api/ticket/${id}/reject`, null)
       );
 
       const results = await Promise.allSettled(calls);
 
       const succeeded = [];
       const failed = [];
+
       results.forEach((r, idx) => {
-        if (r.status === "fulfilled") {
-          succeeded.push(selectedIds[idx]);
-        } else {
-          failed.push(selectedIds[idx]);
-          console.error(
-            `Action failed for ticket ${selectedIds[idx]}`,
-            r.reason
-          );
-        }
+        if (r.status === "fulfilled") succeeded.push(selectedIds[idx]);
+        else failed.push(selectedIds[idx]);
       });
 
-      setTickets((prev) =>
-        prev.map((t) => {
-          if (succeeded.includes(t.id)) {
-            return {
-              ...t,
-              status: isApprove ? "Open" : "Reject",
-            };
-          }
-          return t;
-        })
-      );
-
-      setSelectedIds((prev) => prev.filter((id) => !succeeded.includes(id)));
-
-      if (failed.length > 0) {
-        alert(
-          `Failed to ${label} ${failed.length} ticket(s). See console for details.`
+      // optimistic update (your exact requested format)
+      if (succeeded.length > 0) {
+        setTickets((prev) =>
+          prev.map((t) =>
+            succeeded.includes(t.id)
+              ? { ...t, status: isApprove ? "Open" : "Reject" }
+              : t
+          )
         );
       }
+
+      await loadTickets();
+
+      if (failed.length > 0) {
+        alert(`Failed to ${label} ${failed.length} ticket(s).`);
+      }
+
+      setSelectedIds([]);
     } catch (err) {
-      console.error(`Error updating tickets to ${newStatus}:`, err);
-      alert(`Failed to ${label} some tickets.`);
+      console.error(err);
+      alert("Update failed.");
     } finally {
       setActionLoading(false);
     }
@@ -207,21 +214,15 @@ const TicketChecker = () => {
       {/* Header */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          {/* Title */}
           <div>
             <h1 className="text-2xl font-semibold flex items-center gap-2 text-slate-900">
               <FontAwesomeIcon icon={faTicket} />
               Ticket Checker
             </h1>
-            <p className="text-sm text-slate-500">
-              Tickets waiting for approval
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              Selected: {selectedIds.length}
-            </p>
+            <p className="text-sm text-slate-500">Tickets waiting for approval</p>
+            <p className="text-xs text-slate-400 mt-1">Selected: {selectedIds.length}</p>
           </div>
 
-          {/* Search + bulk buttons */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative w-full sm:w-72">
               <input
@@ -230,55 +231,68 @@ const TicketChecker = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl
-                           focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500
-                           placeholder:text-slate-400 outline-none"
+                  focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none"
               />
             </div>
 
             <div className="flex flex-wrap gap-2">
+              {/* Approve */}
               <button
                 onClick={() => handleBulkStatusChange("Approved")}
                 disabled={actionLoading || selectedIds.length === 0}
-                className={`inline-flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm
-                            font-medium rounded-xl shadow-sm focus:outline-none focus:ring-2
-                            focus:ring-emerald-500/50
-                            ${
-                              selectedIds.length === 0 || actionLoading
-                                ? "bg-emerald-200 text-emerald-800 cursor-not-allowed"
-                                : "bg-emerald-600 text-white hover:bg-emerald-700"
-                            }`}
+                className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
+                  font-medium rounded-xl shadow-sm
+                  ${
+                    selectedIds.length === 0 || actionLoading
+                      ? "bg-emerald-200 text-emerald-800 cursor-not-allowed"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700"
+                  }`}
               >
-                <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
+                {actionLoading ? (
+                  <Spinner size={16} className="text-white" />
+                ) : (
+                  <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
+                )}
                 Approve
               </button>
+
+              {/* Reject */}
               <button
                 onClick={() => handleBulkStatusChange("Rejected")}
                 disabled={actionLoading || selectedIds.length === 0}
-                className={`inline-flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm
-                            font-medium rounded-xl shadow-sm focus:outline-none focus:ring-2
-                            focus:ring-amber-500/50
-                            ${
-                              selectedIds.length === 0 || actionLoading
-                                ? "bg-amber-200 text-amber-800 cursor-not-allowed"
-                                : "bg-amber-500 text-white hover:bg-amber-600"
-                            }`}
+                className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
+                  font-medium rounded-xl shadow-sm
+                  ${
+                    selectedIds.length === 0 || actionLoading
+                      ? "bg-amber-200 text-amber-800 cursor-not-allowed"
+                      : "bg-amber-500 text-white hover:bg-amber-600"
+                  }`}
               >
-                <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
+                {actionLoading ? (
+                  <Spinner size={16} className="text-white" />
+                ) : (
+                  <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
+                )}
                 Reject
               </button>
+
+              {/* Delete */}
               <button
                 onClick={handleBulkDelete}
                 disabled={actionLoading || selectedIds.length === 0}
-                className={`inline-flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm
-                            font-medium rounded-xl shadow-sm focus:outline-none focus:ring-2
-                            focus:ring-red-500/50
-                            ${
-                              selectedIds.length === 0 || actionLoading
-                                ? "bg-red-200 text-red-800 cursor-not-allowed"
-                                : "bg-red-600 text-white hover:bg-red-700"
-                            }`}
+                className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
+                  font-medium rounded-xl shadow-sm
+                  ${
+                    selectedIds.length === 0 || actionLoading
+                      ? "bg-red-200 text-red-800 cursor-not-allowed"
+                      : "bg-red-600 text-white hover:bg-red-700"
+                  }`}
               >
-                <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
+                {actionLoading ? (
+                  <Spinner size={16} className="text-white" />
+                ) : (
+                  <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
+                )}
                 Delete
               </button>
             </div>
@@ -297,9 +311,10 @@ const TicketChecker = () => {
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
                   />
                 </th>
+
                 <th className="px-4 py-3">ID</th>
                 <th className="px-4 py-3">Subject</th>
                 <th className="px-4 py-3">Category</th>
@@ -311,21 +326,19 @@ const TicketChecker = () => {
             </thead>
 
             <tbody className="divide-y divide-slate-100">
+              {/* PAGE LOADING */}
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-sm text-slate-400"
-                  >
-                    Loading tickets...
+                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Spinner size={28} />
+                      <span>Loading tickets...</span>
+                    </div>
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-sm text-red-500"
-                  >
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-red-500">
                     {error}
                     <button
                       onClick={loadTickets}
@@ -352,37 +365,43 @@ const TicketChecker = () => {
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleSelect(t.id)}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
                         />
                       </td>
-                      <td className="px-4 py-3 text-slate-700 font-medium">
-                        {t.id}
-                      </td>
+
+                      <td className="px-4 py-3 text-slate-700 font-medium">{t.id}</td>
+
                       <td className="px-4 py-3 text-slate-800">
                         {t.title || t.subject || "-"}
                       </td>
+
                       <td className="px-4 py-3 text-slate-700">
                         {t.category || "-"}
                       </td>
+
                       <td className="px-4 py-3 text-slate-700">
                         {t.priority || "-"}
                       </td>
+
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                          ${statusBadgeClasses(t.status)}`}
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusBadgeClasses(
+                            t.status
+                          )}`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusDotClasses(
                               t.status
                             )}`}
                           />
-                          {t.status || "Unknown"}
+                          {t.status}
                         </span>
                       </td>
+
                       <td className="px-4 py-3 text-slate-700">
                         {t.assigned_to || "-"}
                       </td>
+
                       <td className="px-4 py-3 text-slate-600">
                         {t.created_at || "-"}
                       </td>
@@ -405,10 +424,9 @@ const TicketChecker = () => {
           </table>
         </div>
 
-        <div className="px-4 py-3 text-xs text-slate-500 bg-slate-50 flex justify-between items-center">
+        <div className="px-4 py-3 text-xs text-slate-500 bg-slate-50 flex justify-between">
           <span>
-            Showing {filteredTickets.length} of {tickets.length} tickets waiting
-            approval
+            Showing {filteredTickets.length} of {tickets.length} tickets
           </span>
           <span className="text-slate-400">Page 1 of 1</span>
         </div>

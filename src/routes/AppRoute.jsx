@@ -10,6 +10,9 @@ import Loading from "../components/common/Loanding";
 import CreateTicket from "../views/tickets/CreateTicket";
 import TicketChecker from "../views/setting/checker/Checker";
 import TicketCheckerView from "../views/setting/checker/CheckerView";
+import DepartmentList from "../views/setting/department/Department";
+import DepartmentCreate from "../views/setting/department/CreateDepartment";
+import Telegram from "../views/setting/configuration/Telegram";
 
 // Lazy-loaded pages
 const Dashboard = lazy(() => import("../views/dashboard/Dashboard"));
@@ -168,6 +171,30 @@ const AppRoute = () => {
                 element={
                   <RequirePermission perm="UPDATE_PERMISSIONS">
                     <RolePermission />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/settings/departments"
+                element={
+                  <RequirePermission perm="UPDATE_PERMISSIONS">
+                    <DepartmentList />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/settings/department/create"
+                element={
+                  <RequirePermission perm="UPDATE_PERMISSIONS">
+                    <DepartmentCreate />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/settings/telegram"
+                element={
+                  <RequirePermission perm="UPDATE_PERMISSIONS">
+                    <Telegram />
                   </RequirePermission>
                 }
               />
