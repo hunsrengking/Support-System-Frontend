@@ -90,9 +90,6 @@ const Login = () => {
 
           <div className="title">{t("login")}</div>
           <br />
-
-          {error && <div className="login-error">{error}</div>}
-
           <form id="loginForm" onSubmit={handleSubmit}>
             <div className="input-box">
               <i className="fas fa-envelope input-icon"></i>

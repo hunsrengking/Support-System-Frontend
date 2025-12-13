@@ -1,10 +1,5 @@
 import React from "react";
 
-/**
- * Reusable spinner (SVG) with Tailwind-friendly classes.
- * size: number (pixels)
- * className: extra tailwind classes (e.g., "text-white")
- */
 const Spinner = ({ size = 20, className = "" }) => {
   return (
     <svg

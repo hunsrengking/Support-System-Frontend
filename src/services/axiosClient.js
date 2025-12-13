@@ -1,5 +1,7 @@
 // src/services/axiosClient.js
 import axios from "axios";
+import { loadingService } from "./loadingService";
+import { errorService } from "./errorService";
 
 const STORAGE_KEY = "app_auth_token";
 const USER_KEY = "app_auth_user";
@@ -13,8 +15,9 @@ const axiosClient = axios.create({
   },
 });
 
+/* ===================== TOKEN HELPERS ===================== */
+
 export const getAccessToken = () =>
-  // keep backward compatibility with older keys
   localStorage.getItem(STORAGE_KEY) ||
   localStorage.getItem("access_token") ||
   localStorage.getItem("token") ||
@@ -23,7 +26,6 @@ export const getAccessToken = () =>
 export const getRefreshToken = () => localStorage.getItem(REFRESH_KEY) || null;
 
 export const setTokens = ({ access_token, refresh_token, user } = {}) => {
-  // always persist under unified keys
   if (access_token) localStorage.setItem(STORAGE_KEY, access_token);
   if (refresh_token) localStorage.setItem(REFRESH_KEY, refresh_token);
   if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -38,13 +40,12 @@ export const clearTokens = () => {
   localStorage.removeItem("permissions");
 };
 
+/* ===================== JWT HELPERS ===================== */
+
 export const parseJwt = (token) => {
   try {
     const payload = token.split(".")[1];
-    const decoded = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-    );
-    return decoded;
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
   } catch {
     return null;
   }
@@ -53,13 +54,14 @@ export const parseJwt = (token) => {
 export const isTokenExpired = (token, offsetSeconds = 10) => {
   if (!token) return true;
   const payload = parseJwt(token);
-  if (!payload || !payload.exp) return true;
+  if (!payload?.exp) return true;
   const now = Math.floor(Date.now() / 1000);
   return payload.exp <= now + offsetSeconds;
 };
 
+/* ===================== REFRESH FLOW ===================== */
+
 let isRefreshing = false;
-let refreshPromise = null;
 let subscribers = [];
 
 const onRefreshed = (token) => {
@@ -67,9 +69,7 @@ const onRefreshed = (token) => {
   subscribers = [];
 };
 
-const addSubscriber = (cb) => {
-  subscribers.push(cb);
-};
+const addSubscriber = (cb) => subscribers.push(cb);
 
 let logoutCallback = () => {};
 export const setLogoutCallback = (fn) => {
@@ -80,113 +80,122 @@ const refreshTokenRequest = async () => {
   const refreshToken = getRefreshToken();
   if (!refreshToken) throw new Error("No refresh token available");
 
-  // Use axios (not axiosClient) to avoid interceptors on refresh request
-  const base =
-    axiosClient.defaults && axiosClient.defaults.baseURL
-      ? axiosClient.defaults.baseURL.replace(/\/$/, "")
-      : "";
+  // IMPORTANT: use axios (no interceptors, no loading)
+  const base = axiosClient.defaults.baseURL?.replace(/\/$/, "") || "";
   const refreshUrl = `${base}/refresh`.replace(/\/{2,}/g, "/");
 
-  // If your backend expects refresh in headers or form, change this body accordingly.
   return axios.post(refreshUrl, { refresh_token: refreshToken });
 };
 
-/* Attach access token to requests */
+/* ===================== REQUEST INTERCEPTOR ===================== */
+
 axiosClient.interceptors.request.use(
   (config) => {
+    if (!config._skipLoading) {
+      loadingService.show();
+      config._loadingShown = true;
+    }
+
     const token = getAccessToken();
     if (token) {
       config.headers = config.headers || {};
-      config.headers["Authorization"] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    loadingService.hide();
+    return Promise.reject(error);
+  }
 );
 
-/* Response interceptor to handle 401 -> refresh flow */
+/* ===================== RESPONSE INTERCEPTOR ===================== */
+
 axiosClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // ⭐ hide loading
+    if (response.config?._loadingShown) {
+      loadingService.hide();
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
-    // If no response or not 401, just propagate
+    // ⭐ hide loading for failed requests
+    if (originalRequest?._loadingShown) {
+      loadingService.hide();
+    }
+
     if (!error.response || error.response.status !== 401) {
+      if (error.response?.data) {
+        const data = error.response.data;
+
+        const message =
+          data.message ||
+          data.detail ||
+          data.error ||
+          (Array.isArray(data.errors)
+            ? data.errors.join(", ")
+            : typeof data.errors === "object"
+            ? Object.values(data.errors).flat().join(", ")
+            : null) ||
+          (typeof data === "string" ? data : null) ||
+          "Something went wrong. Please try again.";
+
+        errorService.show(message);
+      } else {
+        errorService.show("Network error. Please check your connection.");
+      }
+
       return Promise.reject(error);
     }
 
-    // Prevent retry loop: if request already marked as retried, bail out
-    if (originalRequest && originalRequest._retry) {
+    if (originalRequest._retry) {
       return Promise.reject(error);
     }
     originalRequest._retry = true;
 
-    // If already refreshing, queue this request and retry after refresh
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         addSubscriber((token) => {
-          if (token) {
-            originalRequest.headers = originalRequest.headers || {};
-            originalRequest.headers["Authorization"] = `Bearer ${token}`;
-            resolve(axiosClient(originalRequest));
-          } else {
-            reject(error);
-          }
+          if (!token) return reject(error);
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          resolve(axiosClient(originalRequest));
         });
       });
     }
 
-    // Start refresh
     isRefreshing = true;
-    refreshPromise = refreshTokenRequest()
-      .then((res) => {
-        // backend expected shape: { access_token, refresh_token, user } OR { token, ... }
-        const newAccess = res.data.access_token || res.data.token;
-        const newRefresh = res.data.refresh_token || getRefreshToken();
-
-        if (!newAccess) {
-          throw new Error("Refresh did not return new access token");
-        }
-
-        setTokens({
-          access_token: newAccess,
-          refresh_token: newRefresh,
-          user: res.data.user,
-        });
-
-        // update axios defaults so subsequent requests have header by default
-        if (!axiosClient.defaults.headers) axiosClient.defaults.headers = {};
-        if (!axiosClient.defaults.headers.common)
-          axiosClient.defaults.headers.common = {};
-        axiosClient.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${newAccess}`;
-
-        onRefreshed(newAccess);
-        return newAccess;
-      })
-      .catch((err) => {
-        clearTokens();
-        try {
-          logoutCallback();
-        } catch (e) {
-          console.warn("logoutCallback threw:", e);
-        }
-        onRefreshed(null);
-        throw err;
-      })
-      .finally(() => {
-        isRefreshing = false;
-        refreshPromise = null;
-      });
 
     try {
-      const newToken = await refreshPromise;
-      originalRequest.headers = originalRequest.headers || {};
-      originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+      const res = await refreshTokenRequest(); // ❗ no loading
+      const newAccess = res.data.access_token || res.data.token;
+      const newRefresh = res.data.refresh_token || getRefreshToken();
+
+      if (!newAccess) throw new Error("No access token returned");
+
+      setTokens({
+        access_token: newAccess,
+        refresh_token: newRefresh,
+        user: res.data.user,
+      });
+
+      axiosClient.defaults.headers.common.Authorization = `Bearer ${newAccess}`;
+
+      onRefreshed(newAccess);
+
+      originalRequest.headers.Authorization = `Bearer ${newAccess}`;
       return axiosClient(originalRequest);
     } catch (err) {
+      clearTokens();
+      try {
+        logoutCallback();
+      } catch {}
+      onRefreshed(null);
       return Promise.reject(err);
+    } finally {
+      isRefreshing = false;
     }
   }
 );
