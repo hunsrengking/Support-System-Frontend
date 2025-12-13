@@ -71,7 +71,7 @@ const onRefreshed = (token) => {
 
 const addSubscriber = (cb) => subscribers.push(cb);
 
-let logoutCallback = () => {};
+let logoutCallback = () => { };
 export const setLogoutCallback = (fn) => {
   if (typeof fn === "function") logoutCallback = fn;
 };
@@ -138,8 +138,8 @@ axiosClient.interceptors.response.use(
           (Array.isArray(data.errors)
             ? data.errors.join(", ")
             : typeof data.errors === "object"
-            ? Object.values(data.errors).flat().join(", ")
-            : null) ||
+              ? Object.values(data.errors).flat().join(", ")
+              : null) ||
           (typeof data === "string" ? data : null) ||
           "Something went wrong. Please try again.";
 
@@ -191,7 +191,9 @@ axiosClient.interceptors.response.use(
       clearTokens();
       try {
         logoutCallback();
-      } catch {}
+      } catch {
+        console.log(err);
+      }
       onRefreshed(null);
       return Promise.reject(err);
     } finally {

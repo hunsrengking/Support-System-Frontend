@@ -104,7 +104,7 @@ const Header = ({ toggleSidebar }) => {
     try {
       const token = getAccessToken();
       if (token) {
-        await axiosClient.post("/logout", null, {
+        await axiosClient.post("/api/logout", null, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }

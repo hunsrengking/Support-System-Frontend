@@ -12,6 +12,7 @@ export default defineConfig({
       "/api": {
         target: "http://192.168.100.149:8000", 
         changeOrigin: true,
+        secure: false,
       },
       "/ping": {
         target: "http://localhost:8000",

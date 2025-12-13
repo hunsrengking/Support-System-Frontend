@@ -110,7 +110,7 @@ const AppRoute = () => {
                 <Route
                   path="/ticket/create"
                   element={
-                    <RequirePermission perm="VIEW_TICKET">
+                    <RequirePermission perm="CREATE_TICKET">
                       <CreateTicket />
                     </RequirePermission>
                   }

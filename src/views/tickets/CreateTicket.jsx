@@ -27,24 +27,18 @@ const CreateTicket = () => {
 
   const [imagePreviews, setImagePreviews] = useState([]);
   const imageUrlsRef = useRef(new Set());
-
   const imageInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
-
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [priorities, setPriorities] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
-
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingCategory, setLoadingCategory] = useState(false);
   const [loadingPriority, setLoadingPriority] = useState(false);
   const [loadingAssigned, setLoadingAssigned] = useState(false);
-
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
 
-  // Use existing helper (reads from localStorage)
   const canAssign = hasPermission("ASSIGN_TO_STAFF");
 
   const loadDepartments = async () => {
@@ -229,41 +223,49 @@ const CreateTicket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
 
     try {
-      const payload = new FormData();
+      const items = [];
 
-      Object.entries(form).forEach(([key, value]) => {
-        if (key === "images" || key === "attachments") return;
-        // Do not send assigned_to if user lacks permission
-        if (key === "assigned_to" && !canAssign) return;
-        if (value !== null && value !== "") payload.append(key, value);
-      });
-
-      if (form.images && form.images.length) {
-        form.images.forEach((file) => payload.append("images[]", file));
+      if (form.images && form.images.length > 0) {
+        form.images.forEach((img) => {
+          items.push({
+            image_path: img.name,
+            description: "Image attachment",
+          });
+        });
       }
 
-      if (form.attachments && form.attachments.length) {
-        form.attachments.forEach((file) =>
-          payload.append("attachments[]", file)
-        );
+      if (form.attachments && form.attachments.length > 0) {
+        form.attachments.forEach((file) => {
+          items.push({
+            file_path: file.name,
+            description: "File attachment",
+          });
+        });
       }
 
-      await axiosClient.post("/api/ticket", payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const payload = {
+        title: form.subject,
+        description: form.description || null,
+        priority_id: form.priority || null,
+        category_id: form.category || null,
+        assigned_to_id: canAssign ? form.assigned_to || null : null,
+        assigned_to_department_id: form.department || null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        items: items.length > 0 ? items : null,
+      };
 
-      navigate("/tickets");
+      await axiosClient.post("/api/ticket", payload);
+
+      navigate("/ticket");
     } catch (err) {
-      console.error("Error creating ticket:", err);
-      setError("Failed to create ticket. Please try again.");
+      console.error("Create ticket error:", err);
     } finally {
       setSubmitting(false);
     }
   };
-
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -282,12 +284,6 @@ const CreateTicket = () => {
 
       {/* Form */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        {error && (
-          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-            {error}
-          </div>
-        )}
-
         <form
           onSubmit={handleSubmit}
           className="space-y-4"
