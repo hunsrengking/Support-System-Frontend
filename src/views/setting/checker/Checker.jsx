@@ -9,6 +9,7 @@ import {
   faTicket,
 } from "@fortawesome/free-solid-svg-icons";
 import { formatDate } from "../../../utils/formatdate";
+import { hasPermission } from "../../../utils/permission";
 
 const TicketChecker = () => {
   const navigate = useNavigate();
@@ -135,7 +136,9 @@ const TicketChecker = () => {
     const isApprove = newStatus === "Approved";
     const label = isApprove ? "approve" : "reject";
 
-    if (!window.confirm(`Are you sure you want to ${label} selected tickets?`)) {
+    if (
+      !window.confirm(`Are you sure you want to ${label} selected tickets?`)
+    ) {
       return;
     }
 
@@ -188,50 +191,56 @@ const TicketChecker = () => {
             />
 
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleBulkStatusChange("Approved")}
-                disabled={actionLoading || selectedIds.length === 0}
-                className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
+              {hasPermission("APPROVE_CHEKER") && (
+                <button
+                  onClick={() => handleBulkStatusChange("Approved")}
+                  disabled={actionLoading || selectedIds.length === 0}
+                  className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
                   font-medium rounded-xl shadow-sm
                   ${
                     selectedIds.length === 0 || actionLoading
                       ? "bg-emerald-200 text-emerald-800 cursor-not-allowed"
                       : "bg-emerald-600 text-white hover:bg-emerald-700"
                   }`}
-              >
-                <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
-                Approve
-              </button>
+                >
+                  <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
+                  Approve
+                </button>
+              )}
 
-              <button
-                onClick={() => handleBulkStatusChange("Rejected")}
-                disabled={actionLoading || selectedIds.length === 0}
-                className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
+              {hasPermission("REJECT_CHEKER") && (
+                <button
+                  onClick={() => handleBulkStatusChange("Rejected")}
+                  disabled={actionLoading || selectedIds.length === 0}
+                  className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
                   font-medium rounded-xl shadow-sm
                   ${
                     selectedIds.length === 0 || actionLoading
                       ? "bg-amber-200 text-amber-800 cursor-not-allowed"
                       : "bg-amber-500 text-white hover:bg-amber-600"
                   }`}
-              >
-                <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
-                Reject
-              </button>
+                >
+                  <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
+                  Reject
+                </button>
+              )}
 
-              <button
-                onClick={handleBulkDelete}
-                disabled={actionLoading || selectedIds.length === 0}
-                className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
+              {hasPermission("DELETE_CHEKER") && (
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={actionLoading || selectedIds.length === 0}
+                  className={`inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm
                   font-medium rounded-xl shadow-sm
                   ${
                     selectedIds.length === 0 || actionLoading
                       ? "bg-red-200 text-red-800 cursor-not-allowed"
                       : "bg-red-600 text-white hover:bg-red-700"
                   }`}
-              >
-                <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                Delete
-              </button>
+                >
+                  <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -257,7 +266,10 @@ const TicketChecker = () => {
             <tbody className="divide-y divide-slate-100">
               {error ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-red-500">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-red-500"
+                  >
                     {error}
                   </td>
                 </tr>
@@ -279,9 +291,7 @@ const TicketChecker = () => {
                       />
                     </td>
                     <td className="px-4 py-3">{t.id}</td>
-                    <td className="px-4 py-3">
-                      {t.title || t.subject || "-"}
-                    </td>
+                    <td className="px-4 py-3">{t.title || t.subject || "-"}</td>
                     <td className="px-4 py-3">{t.category || "-"}</td>
                     <td className="px-4 py-3">{t.priority || "-"}</td>
                     <td className="px-4 py-3">
@@ -306,7 +316,10 @@ const TicketChecker = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-slate-400"
+                  >
                     No tickets waiting for approval.
                   </td>
                 </tr>

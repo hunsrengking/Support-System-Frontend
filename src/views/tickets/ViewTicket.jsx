@@ -30,7 +30,10 @@ const ViewTicket = () => {
     end_date: "",
     assigned_to: "",
     priority_id: "",
+    category_id: "",
+    description: "",
   });
+
   const [saving, setSaving] = useState(false);
 
   const [departments, setDepartments] = useState([]);
@@ -136,16 +139,10 @@ const ViewTicket = () => {
         end_date: isoToDatetimeLocalValue(
           data.end_date ?? data.endDate ?? data.end_date
         ),
-        assigned_to:
-          data.assigned_to ??
-          data.assignedTo ??
-          data.assignee ??
-          prev.assigned_to,
-        priority_id:
-          data.priority_id ??
-          data.priorityId ??
-          data.priority ??
-          prev.priority_id,
+        assigned_to: data.assigned_to_id ?? data.assignedToId ?? "",
+        priority_id: data.priority_id ?? data.priorityId ?? data.priority ?? "",
+        category_id: data.category_id ?? data.categoryId ?? "",
+        description: data.description ?? "",
       }));
     } catch (err) {
       console.error("Error loading ticket:", err);
@@ -183,10 +180,11 @@ const ViewTicket = () => {
       end_date: isoToDatetimeLocalValue(
         ticket?.end_date ?? ticket?.endDate ?? ticket?.end_date
       ),
-      assigned_to:
-        ticket?.assigned_to ?? ticket?.assignedTo ?? ticket?.assignee ?? "",
+      assigned_to: ticket?.assigned_to_id ?? ticket?.assignedToId ?? "",
       priority_id:
         ticket?.priority_id ?? ticket?.priorityId ?? ticket?.priority ?? "",
+      category_id: ticket?.category_id ?? ticket?.categoryId ?? "",
+      description: ticket?.description ?? "",
     });
     setEditing(true);
   };
@@ -201,10 +199,11 @@ const ViewTicket = () => {
       end_date: isoToDatetimeLocalValue(
         ticket?.end_date ?? ticket?.endDate ?? ticket?.end_date
       ),
-      assigned_to:
-        ticket?.assigned_to ?? ticket?.assignedTo ?? ticket?.assignee ?? "",
+      assigned_to: ticket?.assigned_to_id ?? ticket?.assignedToId ?? "",
       priority_id:
         ticket?.priority_id ?? ticket?.priorityId ?? ticket?.priority ?? "",
+      category_id: ticket?.category_id ?? ticket?.categoryId ?? "",
+      description: ticket?.description ?? "",
     });
   };
 
@@ -235,6 +234,8 @@ const ViewTicket = () => {
       priority_name: selectedPriority
         ? selectedPriority.name ?? selectedPriority.label
         : undefined,
+      category_id: form.category_id ? Number(form.category_id) : null,
+      description: form.description,
     };
 
     Object.keys(payload).forEach((k) => {
@@ -465,9 +466,38 @@ const ViewTicket = () => {
                   <p className="text-slate-500 text-xs uppercase tracking-wide">
                     Category
                   </p>
-                  <p className="text-slate-800">
-                    {ticket.category_name ?? ticket.category ?? "-"}
-                  </p>
+
+                  {!editing ? (
+                    <p className="text-slate-800">
+                      {ticket.category_name ?? ticket.category ?? "-"}
+                    </p>
+                  ) : loadingCategory ? (
+                    <p className="text-sm text-slate-400">
+                      Loading categories...
+                    </p>
+                  ) : Array.isArray(categories) && categories.length > 0 ? (
+                    <select
+                      name="category_id"
+                      value={form.category_id ?? ""}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    >
+                      <option value="">-- Select category --</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name ?? c.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name="category_id"
+                      value={form.category_id}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -499,8 +529,8 @@ const ViewTicket = () => {
                       {
                         // try to show name from assignedUsers if id; otherwise show raw value
                         assignedUsers.find(
-                          (u) => String(u.id) === String(ticket.assigned_to)
-                        )?.name ??
+                          (u) => String(u.id) === String(ticket.assigned_to_id)
+                        )?.username ??
                           ticket.assigned_to ??
                           "-"
                       }
@@ -516,8 +546,8 @@ const ViewTicket = () => {
                     >
                       <option value="">-- Unassigned --</option>
                       {assignedUsers.map((u) => (
-                        <option key={u.id ?? u.username ?? u.name} value={u.id}>
-                          {u.name ?? u.username ?? `#${u.id}`}
+                        <option key={u.id} value={u.id}>
+                          {u.username}
                         </option>
                       ))}
                     </select>
@@ -532,16 +562,6 @@ const ViewTicket = () => {
                     />
                   )}
                 </div>
-
-                <div>
-                  <p className="text-slate-500 text-xs uppercase tracking-wide">
-                    Updated At
-                  </p>
-                  <p className="text-slate-800">
-                    {formatDate(ticket.update_date ?? ticket.updated_at)}
-                  </p>
-                </div>
-
                 {/* Start / End Date (editable only when editing) */}
                 <div>
                   <p className="text-slate-500 text-xs uppercase tracking-wide">
@@ -681,9 +701,21 @@ const ViewTicket = () => {
               <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">
                 Description
               </p>
-              <div className="text-sm text-slate-800 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 whitespace-pre-wrap">
-                {ticket.description || "No description provided."}
-              </div>
+
+              {!editing ? (
+                <div className="text-sm text-slate-800 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 whitespace-pre-wrap">
+                  {ticket.description || "No description provided."}
+                </div>
+              ) : (
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={5}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                  placeholder="Enter description..."
+                />
+              )}
             </div>
           </div>
         )}

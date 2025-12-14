@@ -130,7 +130,7 @@ const AppRoute = () => {
                 <Route
                   path="/checkermaker"
                   element={
-                    <RequirePermission perm="VIEW_TICKET">
+                    <RequirePermission perm="MAKER_CHECKER">
                       <TicketChecker />
                     </RequirePermission>
                   }
@@ -139,7 +139,7 @@ const AppRoute = () => {
                 <Route
                   path="/checkermaker/view/:id"
                   element={
-                    <RequirePermission perm="VIEW_TICKET">
+                    <RequirePermission perm="MAKER_CHECKER">
                       <TicketCheckerView />
                     </RequirePermission>
                   }

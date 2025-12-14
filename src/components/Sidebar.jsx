@@ -45,7 +45,7 @@ const Sidebar = ({ sidebarOpen }) => {
         )}
 
         {/* Checker */}
-        {hasPermission("VIEW_TICKET") && (
+        {hasPermission("MAKER_CHECKER") && (
           <Link
             to="/checkermaker"
             className="flex items-center p-2 rounded-lg hover:bg-slate-100"
