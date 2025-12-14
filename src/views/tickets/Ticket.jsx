@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faSearch, faTicket } from "@fortawesome/free-solid-svg-icons";
 import { formatDate } from "../../utils/formatdate";
 
+const PAGE_SIZE = 15;
+
 const Ticket = () => {
   const navigate = useNavigate();
 
@@ -13,6 +15,7 @@ const Ticket = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
 
   const loadTickets = useCallback(async () => {
     try {
@@ -78,6 +81,19 @@ const Ticket = () => {
       (t.assigned_to_name ?? "").toLowerCase().includes(q)
     );
   });
+
+  // ✅ PAGINATION LOGIC (ONLY ADDITION)
+  const totalPages = Math.ceil(filteredTickets.length / PAGE_SIZE);
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const paginatedTickets = filteredTickets.slice(
+    startIndex,
+    startIndex + PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -142,47 +158,27 @@ const Ticket = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-8 text-center text-sm text-slate-400"
-                  >
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
                     Loading tickets...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-8 text-center text-sm text-red-500"
-                  >
+                  <td colSpan={9} className="px-4 py-8 text-center text-red-500">
                     {error}
-                    <button
-                      onClick={loadTickets}
-                      className="ml-2 text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Retry
-                    </button>
                   </td>
                 </tr>
-              ) : filteredTickets.length > 0 ? (
-                filteredTickets.map((t) => (
+              ) : paginatedTickets.length > 0 ? (
+                paginatedTickets.map((t) => (
                   <tr
                     key={t.id}
                     onClick={() => handleViewTicket(t.id)}
-                    className="hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
+                    className="hover:bg-slate-50 cursor-pointer"
                   >
-                    <td className="px-4 py-3 text-slate-700 font-medium">
-                      {t.id}
-                    </td>
-                    <td className="px-4 py-3 text-slate-800">
-                      {t.title ?? "-"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {t.category ?? "-"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {t.priority ?? "-"}
-                    </td>
+                    <td className="px-4 py-3">{t.id}</td>
+                    <td className="px-4 py-3">{t.title ?? "-"}</td>
+                    <td className="px-4 py-3">{t.category ?? "-"}</td>
+                    <td className="px-4 py-3">{t.priority ?? "-"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusBadgeClasses(
@@ -197,30 +193,16 @@ const Ticket = () => {
                         {t.status ?? "Unknown"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {t.assigned_to ?? "-"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {formatDate(t.create_date)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {formatDate(t.start_date)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {formatDate(t.end_date)}
-                    </td>
-                    
+                    <td className="px-4 py-3">{t.assigned_to ?? "-"}</td>
+                    <td className="px-4 py-3">{formatDate(t.create_date)}</td>
+                    <td className="px-4 py-3">{formatDate(t.start_date)}</td>
+                    <td className="px-4 py-3">{formatDate(t.end_date)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-8 text-center text-sm text-slate-400"
-                  >
-                    {searchTerm
-                      ? "No tickets match your search."
-                      : "No tickets found."}
+                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
+                    No tickets found.
                   </td>
                 </tr>
               )}
@@ -228,11 +210,33 @@ const Ticket = () => {
           </table>
         </div>
 
-        <div className="px-4 py-3 text-xs text-slate-500 bg-slate-50 flex justify-between items-center">
-          <span>
-            Showing {filteredTickets.length} of {tickets.length} tickets
+        {/* ✅ PAGINATION UI */}
+        <div className="px-4 py-3 bg-slate-50 flex justify-between items-center text-sm">
+          <span className="text-slate-500">
+            Showing {paginatedTickets.length} of {filteredTickets.length} tickets
           </span>
-          <span className="text-slate-400">Page 1 of 1</span>
+
+          <div className="flex gap-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="px-3 py-1 rounded-lg border disabled:opacity-50"
+            >
+              Prev
+            </button>
+
+            <span className="px-2 text-slate-600">
+              Page {page} of {totalPages || 1}
+            </span>
+
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-1 rounded-lg border disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>

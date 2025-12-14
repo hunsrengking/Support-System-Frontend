@@ -10,6 +10,7 @@ import {
   faTrash,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
+import { hasPermission } from "../../utils/permission";
 
 const Users = () => {
   const navigate = useNavigate();
@@ -39,11 +40,11 @@ const Users = () => {
   }, []);
 
   const handleAddUser = () => {
-    navigate("/settings/users/create"); // ➜ page with password input
+    navigate("/users/create"); // ➜ page with password input
   };
 
   const handleEditUser = (id) => {
-    navigate(`/settings/users/${id}/edit`); // ➜ page WITHOUT password input
+    navigate(`/users/${id}/edit`); // ➜ page WITHOUT password input
   };
 
   const handleDeleteUser = async (id) => {
@@ -60,7 +61,7 @@ const Users = () => {
 
   // New: view user detail
   const handleViewUser = (id) => {
-    navigate(`/settings/users/${id}/view`);
+    navigate(`/users/${id}/view`);
   };
 
   // Filter users based on search term
@@ -80,7 +81,7 @@ const Users = () => {
 
           <div>
             <h1 className="text-2xl font-semibold flex items-center gap-2 text-slate-900">
-             <FontAwesomeIcon icon={faUser} />
+              <FontAwesomeIcon icon={faUser} />
               User Management
             </h1>
             <p className="text-sm text-slate-500 mt-1">
@@ -105,16 +106,18 @@ const Users = () => {
               />
             </div>
 
-            <button
-              onClick={handleAddUser}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm
+            {hasPermission("CREATE_USER") && (
+              <button
+                onClick={handleAddUser}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm
                          font-medium rounded-xl bg-blue-600 text-white shadow-sm
                          hover:bg-blue-700 focus:outline-none focus:ring-2
                          focus:ring-blue-500/50"
-            >
-              <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
-              <span>Add User</span>
-            </button>
+              >
+                <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
+                <span>Add User</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -164,8 +167,17 @@ const Users = () => {
                 filteredUsers.map((u) => (
                   <tr
                     key={u.id}
-                    onClick={() => handleViewUser(u.id)}
-                    className="hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
+                    onClick={
+                      hasPermission("VIEW_USER")
+                        ? () => handleViewUser(u.id)
+                        : undefined
+                    }
+                    className={`transition-colors duration-150
+    ${
+      hasPermission("VIEW_USER")
+        ? "hover:bg-slate-50 cursor-pointer"
+        : "cursor-not-allowed opacity-60"
+    }`}
                   >
                     <td className="px-4 py-3 text-slate-700 font-medium">
                       {u.id}
@@ -211,24 +223,34 @@ const Users = () => {
                         className="inline-flex items-center gap-2"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <button
-                          onClick={() => handleEditUser(u.id)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg
+                        {hasPermission("UPDATE_USER") && (
+                          <button
+                            onClick={() => handleEditUser(u.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg
                                      text-slate-500 hover:text-blue-600 hover:bg-blue-50
                                      transition-colors"
-                          aria-label="Edit user"
-                        >
-                          <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg
+                            aria-label="Edit user"
+                          >
+                            <FontAwesomeIcon
+                              icon={faEdit}
+                              className="h-4 w-4"
+                            />
+                          </button>
+                        )}
+                        {hasPermission("DELETE_USER") && (
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg
                                      text-slate-500 hover:text-red-600 hover:bg-red-50
                                      transition-colors"
-                          aria-label="Delete user"
-                        >
-                          <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                        </button>
+                            aria-label="Delete user"
+                          >
+                            <FontAwesomeIcon
+                              icon={faTrash}
+                              className="h-4 w-4"
+                            />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

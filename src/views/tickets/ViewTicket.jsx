@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/views/tickets/ViewTicket.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -12,29 +13,111 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { formatDate } from "../../utils/formatdate";
 
-const STATUS_OPTIONS = [
-  { value: "Open", label: "Open" },
-  { value: "In Progress", label: "In Progress" },
-  { value: "Resolved", label: "Resolved" },
-  { value: "Closed", label: "Closed" },
-];
-
 const ViewTicket = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // ticket + ui state
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // editing form
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     status_name: "",
     start_date: "",
     end_date: "",
+    assigned_to: "",
+    priority_id: "",
+    category_id: "",
+    description: "",
   });
+
   const [saving, setSaving] = useState(false);
 
+  const [departments, setDepartments] = useState([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategory, setLoadingCategory] = useState(false);
+  const [priorities, setPriorities] = useState([]);
+  const [loadingPriority, setLoadingPriority] = useState(false);
+  const [assignedUsers, setAssignedUsers] = useState([]);
+  const [loadingAssigned, setLoadingAssigned] = useState(false);
+  const [statuses, setStatuses] = useState([]);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const canAssign = true;
+
+  const isoToDatetimeLocalValue = (iso) => {
+    if (!iso) return "";
+    try {
+      return iso.slice(0, 16);
+    } catch {
+      return "";
+    }
+  };
+  const loadDepartments = async () => {
+    setLoadingDepartments(true);
+    try {
+      const res = await axiosClient.get("/api/department");
+      setDepartments(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading departments:", err);
+      setDepartments([]);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+  const loadCategory = async () => {
+    setLoadingCategory(true);
+    try {
+      const res = await axiosClient.get("/api/category");
+      setCategories(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading categories:", err);
+      setCategories([]);
+    } finally {
+      setLoadingCategory(false);
+    }
+  };
+  const loadPriority = async () => {
+    setLoadingPriority(true);
+    try {
+      const res = await axiosClient.get("/api/priority");
+      setPriorities(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading priorities:", err);
+      setPriorities([]);
+    } finally {
+      setLoadingPriority(false);
+    }
+  };
+  const loadAssignedUsers = async () => {
+    if (!canAssign) return;
+    setLoadingAssigned(true);
+    try {
+      const res = await axiosClient.get("/api/users");
+      setAssignedUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading users:", err);
+      setAssignedUsers([]);
+    } finally {
+      setLoadingAssigned(false);
+    }
+  };
+
+  const loadStatus = async () => {
+    setLoadingStatus(true);
+    try {
+      const res = await axiosClient.get("/api/status");
+      setStatuses(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error loading statuses:", err);
+      setStatuses([]);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
   const loadTicket = useCallback(async () => {
     try {
       setLoading(true);
@@ -47,16 +130,20 @@ const ViewTicket = () => {
         return;
       }
       setTicket(data);
-      // Initialize form values from response (convert to input-friendly values)
-      setForm({
+      setForm((prev) => ({
+        ...prev,
         status_name: data.status_name ?? data.status ?? "",
-        start_date: toDateTimeLocal(
+        start_date: isoToDatetimeLocalValue(
           data.start_date ?? data.startDate ?? data.start_date
         ),
-        end_date: toDateTimeLocal(
+        end_date: isoToDatetimeLocalValue(
           data.end_date ?? data.endDate ?? data.end_date
         ),
-      });
+        assigned_to: data.assigned_to_id ?? data.assignedToId ?? "",
+        priority_id: data.priority_id ?? data.priorityId ?? data.priority ?? "",
+        category_id: data.category_id ?? data.categoryId ?? "",
+        description: data.description ?? "",
+      }));
     } catch (err) {
       console.error("Error loading ticket:", err);
       if (err?.response?.status === 404) {
@@ -71,62 +158,53 @@ const ViewTicket = () => {
   }, [id]);
 
   useEffect(() => {
+    loadDepartments();
+    loadStatus();
+    loadCategory();
+    loadPriority();
+    if (canAssign) loadAssignedUsers();
+    else setForm((prev) => ({ ...prev, assigned_to: "" }));
     loadTicket();
-  }, [loadTicket]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAssign]);
 
   const handleBack = () => navigate("/ticket");
+
   const startEdit = () => {
-    // enter edit mode and initialize form from current ticket state
+    if (!ticket) return;
     setForm({
       status_name: ticket?.status_name ?? ticket?.status ?? "",
-      start_date: toDateTimeLocal(
+      start_date: isoToDatetimeLocalValue(
         ticket?.start_date ?? ticket?.startDate ?? ticket?.start_date
       ),
-      end_date: toDateTimeLocal(
+      end_date: isoToDatetimeLocalValue(
         ticket?.end_date ?? ticket?.endDate ?? ticket?.end_date
       ),
+      assigned_to: ticket?.assigned_to_id ?? ticket?.assignedToId ?? "",
+      priority_id:
+        ticket?.priority_id ?? ticket?.priorityId ?? ticket?.priority ?? "",
+      category_id: ticket?.category_id ?? ticket?.categoryId ?? "",
+      description: ticket?.description ?? "",
     });
     setEditing(true);
   };
+
   const cancelEdit = () => {
     setEditing(false);
-    // discard changes; reset form (optional)
     setForm({
       status_name: ticket?.status_name ?? ticket?.status ?? "",
-      start_date: toDateTimeLocal(
+      start_date: isoToDatetimeLocalValue(
         ticket?.start_date ?? ticket?.startDate ?? ticket?.start_date
       ),
-      end_date: toDateTimeLocal(
+      end_date: isoToDatetimeLocalValue(
         ticket?.end_date ?? ticket?.endDate ?? ticket?.end_date
       ),
+      assigned_to: ticket?.assigned_to_id ?? ticket?.assignedToId ?? "",
+      priority_id:
+        ticket?.priority_id ?? ticket?.priorityId ?? ticket?.priority ?? "",
+      category_id: ticket?.category_id ?? ticket?.categoryId ?? "",
+      description: ticket?.description ?? "",
     });
-  };
-
-  const toDateTimeLocal = (iso) => {
-    if (!iso) return "";
-    try {
-      // Normalize possible seconds/milliseconds
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return "";
-      // get local components and format yyyy-MM-ddTHH:mm (datetime-local)
-      const pad = (n) => n.toString().padStart(2, "0");
-      const yyyy = d.getFullYear();
-      const mm = pad(d.getMonth() + 1);
-      const dd = pad(d.getDate());
-      const hh = pad(d.getHours());
-      const min = pad(d.getMinutes());
-      return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-    } catch {
-      return "";
-    }
-  };
-
-  const fromDateTimeLocalToISO = (localValue) => {
-    if (!localValue) return null;
-    // localValue looks like "YYYY-MM-DDTHH:mm"
-    const d = new Date(localValue);
-    if (isNaN(d.getTime())) return null;
-    return d.toISOString();
   };
 
   const handleChange = (e) => {
@@ -135,39 +213,68 @@ const ViewTicket = () => {
   };
 
   const handleSave = async () => {
-    // Only send fields allowed to update
-    const payload = {
-      status_id: mapStatusToId(form.status_name, ticket), // attempt to send ID if backend expects it, fallback to name
-      status_name: form.status_name, // include name in case backend accepts it
-      start_date: fromDateTimeLocalToISO(form.start_date),
-      end_date: fromDateTimeLocalToISO(form.end_date),
+    const toISO = (local) => {
+      if (!local) return null;
+      const d = new Date(local);
+      if (isNaN(d.getTime())) return null;
+      return d.toISOString();
     };
 
-    // Remove null fields (if backend doesn't like nulls)
+    const selectedPriority = Array.isArray(priorities)
+      ? priorities.find((p) => String(p.id) === String(form.priority_id))
+      : undefined;
+
+    const payload = {
+      status_id: mapStatusToId(form.status_name, ticket),
+      status_name: form.status_name,
+      start_date: toISO(form.start_date),
+      end_date: toISO(form.end_date),
+      assigned_to_id: form.assigned_to ? Number(form.assigned_to) : null,
+      priority_id: form.priority_id ? form.priority_id : null,
+      priority_name: selectedPriority
+        ? selectedPriority.name ?? selectedPriority.label
+        : undefined,
+      category_id: form.category_id ? Number(form.category_id) : null,
+      description: form.description,
+    };
+
     Object.keys(payload).forEach((k) => {
-      if (payload[k] === null || payload[k] === undefined) delete payload[k];
+      if (
+        payload[k] === null ||
+        payload[k] === undefined ||
+        (typeof payload[k] === "string" && payload[k].trim() === "")
+      ) {
+        delete payload[k];
+      }
     });
 
     try {
       setSaving(true);
-      // Use PATCH so we only update provided fields
       await axiosClient.patch(`/api/ticket/${id}`, payload);
-      // reload ticket to refresh UI
       await loadTicket();
       setEditing(false);
     } catch (err) {
       console.error("Error saving ticket:", err);
-      const msg =
+      setError(
         err?.response?.data?.detail ??
-        "Failed to save changes. Please try again.";
-      setError(msg);
+          "Failed to save changes. Please try again."
+      );
     } finally {
       setSaving(false);
     }
   };
+
   const mapStatusToId = (statusName, ticketData) => {
     if (!statusName) return undefined;
-    // Attempt to use ticketData.status_id if the name matches current one
+    if (Array.isArray(statuses) && statuses.length > 0) {
+      const found = statuses.find(
+        (s) =>
+          String(s.name ?? s.label ?? s.status_name ?? s.value ?? "")
+            .toLowerCase()
+            .trim() === String(statusName).toLowerCase().trim()
+      );
+      if (found) return found.id ?? found.value ?? undefined;
+    }
     if (
       ticketData &&
       (ticketData.status_name === statusName ||
@@ -203,6 +310,7 @@ const ViewTicket = () => {
         return "bg-slate-50 text-slate-600 border border-slate-100";
     }
   };
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -232,8 +340,10 @@ const ViewTicket = () => {
             {!editing ? (
               <button
                 onClick={startEdit}
+                disabled={!ticket || loading}
+                aria-disabled={!ticket || loading}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
-                           rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+                           rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
               >
                 <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
                 Edit
@@ -271,7 +381,10 @@ const ViewTicket = () => {
           <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
             {error}
             <button
-              onClick={loadTicket}
+              onClick={() => {
+                loadTicket();
+                if (canAssign) loadAssignedUsers();
+              }}
               className="ml-2 text-blue-600 hover:text-blue-800 underline"
             >
               Retry
@@ -301,7 +414,6 @@ const ViewTicket = () => {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                {/* Status - shows badge when not editing, or select when editing */}
                 {!editing ? (
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusBadgeClasses(
@@ -310,25 +422,38 @@ const ViewTicket = () => {
                   >
                     {ticket.status_name ?? ticket.status ?? "Unknown"}
                   </span>
-                ) : (
+                ) : loadingStatus ? (
+                  <p className="text-sm text-slate-400">Loading statuses...</p>
+                ) : Array.isArray(statuses) && statuses.length > 0 ? (
                   <select
                     name="status_name"
                     value={form.status_name}
                     onChange={handleChange}
                     className="rounded-lg px-3 py-2 border border-slate-200 text-sm"
                   >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
+                    {statuses.map((s) => (
+                      <option
+                        key={s.id ?? s.value ?? s.name}
+                        value={s.name ?? s.label ?? s.value}
+                      >
+                        {s.name ?? s.label ?? s.value}
                       </option>
                     ))}
                   </select>
+                ) : (
+                  // server returned no statuses — show editable text input instead
+                  <input
+                    name="status_name"
+                    value={form.status_name}
+                    onChange={handleChange}
+                    placeholder="Type status"
+                    className="rounded-lg px-3 py-2 border border-slate-200 text-sm"
+                  />
                 )}
 
-                {/* Priority (read-only always) */}
-                {(ticket.priority_name || ticket.priority_id) && (
+                {(ticket.priority || ticket.priority_id) && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
-                    Priority: {ticket.priority_name ?? ticket.priority_id}
+                    Priority: {ticket.priority ?? ticket.priority_id}
                   </span>
                 )}
               </div>
@@ -341,9 +466,38 @@ const ViewTicket = () => {
                   <p className="text-slate-500 text-xs uppercase tracking-wide">
                     Category
                   </p>
-                  <p className="text-slate-800">
-                    {ticket.category_name ?? ticket.category ?? "-"}
-                  </p>
+
+                  {!editing ? (
+                    <p className="text-slate-800">
+                      {ticket.category_name ?? ticket.category ?? "-"}
+                    </p>
+                  ) : loadingCategory ? (
+                    <p className="text-sm text-slate-400">
+                      Loading categories...
+                    </p>
+                  ) : Array.isArray(categories) && categories.length > 0 ? (
+                    <select
+                      name="category_id"
+                      value={form.category_id ?? ""}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    >
+                      <option value="">-- Select category --</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name ?? c.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name="category_id"
+                      value={form.category_id}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -358,7 +512,7 @@ const ViewTicket = () => {
                     Created At
                   </p>
                   <p className="text-slate-800">
-                    {formatDate(ticket.create_date)}
+                    {formatDate(ticket.created_at)}
                   </p>
                 </div>
               </div>
@@ -368,18 +522,46 @@ const ViewTicket = () => {
                   <p className="text-slate-500 text-xs uppercase tracking-wide">
                     Assigned To
                   </p>
-                  <p className="text-slate-800">{ticket.assigned_to ?? "-"}</p>
-                </div>
 
-                <div>
-                  <p className="text-slate-500 text-xs uppercase tracking-wide">
-                    Updated At
-                  </p>
-                  <p className="text-slate-800">
-                    {formatDate(ticket.update_date ?? ticket.updated_at)}
-                  </p>
+                  {/* Editable assigned_to: use assignedUsers when editing */}
+                  {!editing ? (
+                    <p className="text-slate-800">
+                      {
+                        // try to show name from assignedUsers if id; otherwise show raw value
+                        assignedUsers.find(
+                          (u) => String(u.id) === String(ticket.assigned_to_id)
+                        )?.username ??
+                          ticket.assigned_to ??
+                          "-"
+                      }
+                    </p>
+                  ) : loadingAssigned ? (
+                    <p className="text-sm text-slate-400">Loading users...</p>
+                  ) : assignedUsers && assignedUsers.length > 0 ? (
+                    <select
+                      name="assigned_to"
+                      value={form.assigned_to ?? ""}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    >
+                      <option value="">-- Unassigned --</option>
+                      {assignedUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.username}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name="assigned_to"
+                      value={form.assigned_to}
+                      onChange={handleChange}
+                      placeholder="Type assignee id or name"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  )}
                 </div>
-
                 {/* Start / End Date (editable only when editing) */}
                 <div>
                   <p className="text-slate-500 text-xs uppercase tracking-wide">
@@ -424,37 +606,78 @@ const ViewTicket = () => {
                     />
                   )}
                 </div>
+
+                {/* Priority (editable) */}
+                <div>
+                  <p className="text-slate-500 text-xs uppercase tracking-wide">
+                    Priority
+                  </p>
+                  {!editing ? (
+                    <p className="text-slate-800">{ticket.priority ?? "-"}</p>
+                  ) : loadingPriority ? (
+                    <p className="text-sm text-slate-400">
+                      Loading priorities...
+                    </p>
+                  ) : Array.isArray(priorities) && priorities.length > 0 ? (
+                    <select
+                      name="priority_id"
+                      value={form.priority_id ?? ""}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    >
+                      <option value="">-- Select priority --</option>
+                      {priorities.map((p) => (
+                        <option
+                          key={p.id ?? p.value ?? p.name}
+                          value={p.id ?? p.value}
+                        >
+                          {p.name ?? p.label ?? p.value}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name="priority_id"
+                      value={form.priority_id}
+                      onChange={handleChange}
+                      placeholder="Type priority"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Items (if any) */}
+            {/* Items / Attachments (supports multiple images/files) */}
             {Array.isArray(ticket.items) && ticket.items.length > 0 && (
               <div>
                 <p className="text-slate-500 text-xs uppercase tracking-wide mb-2">
                   Attachments
                 </p>
-                <div className="space-y-2">
-                  {ticket.items.map((it) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {ticket.items.map((it, idx) => (
                     <div
                       key={
-                        it.id ?? `${it.image_path ?? ""}-${it.file_path ?? ""}`
+                        it.id ??
+                        `${it.image_path ?? ""}-${it.file_path ?? ""}-${idx}`
                       }
                       className="flex items-start gap-3"
                     >
                       {it.image_path ? (
                         <img
                           src={it.image_path}
-                          alt={it.description ?? "attachment"}
-                          className="w-20 h-14 object-cover rounded-md border"
+                          alt={it.description ?? `attachment-${idx + 1}`}
+                          className="w-24 h-16 object-cover rounded-md border"
                         />
                       ) : (
-                        <div className="w-20 h-14 flex items-center justify-center rounded-md border text-xs text-slate-400">
+                        <div className="w-24 h-16 flex items-center justify-center rounded-md border text-xs text-slate-400">
                           No image
                         </div>
                       )}
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm text-slate-800">
-                          {it.description ?? "Attachment"}
+                          {it.description ?? `Attachment ${idx + 1}`}
                         </p>
                         {it.file_path && (
                           <a
@@ -472,20 +695,30 @@ const ViewTicket = () => {
                 </div>
               </div>
             )}
+
+            {/* Description */}
+            <div>
+              <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">
+                Description
+              </p>
+
+              {!editing ? (
+                <div className="text-sm text-slate-800 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 whitespace-pre-wrap">
+                  {ticket.description || "No description provided."}
+                </div>
+              ) : (
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={5}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                  placeholder="Enter description..."
+                />
+              )}
+            </div>
           </div>
         )}
-        {/* Description */}
-        <div>
-          <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">
-            Description
-          </p>
-          <div
-            type="Text"
-            className="text-sm text-slate-800 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3"
-          >
-            {ticket.description || "No description provided."}
-          </div>
-        </div>
       </div>
     </div>
   );

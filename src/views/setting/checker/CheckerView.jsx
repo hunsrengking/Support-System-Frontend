@@ -8,6 +8,8 @@ import {
   faCheck,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
+import { formatDate } from "../../../utils/formatdate";
+import { hasPermission } from "../../../utils/permission";
 
 const TicketCheckerView = () => {
   const { id } = useParams();
@@ -21,7 +23,7 @@ const TicketCheckerView = () => {
   const loadTicket = async () => {
     try {
       setLoading(true);
-      const res = await axiosClient.get(`/api/tickets/${id}`);
+      const res = await axiosClient.get(`/api/ticket/${id}`);
       setTicket(res.data);
     } catch (err) {
       console.error("Failed to load ticket:", err);
@@ -35,19 +37,40 @@ const TicketCheckerView = () => {
     loadTicket();
   }, [id]);
 
-  const updateStatus = async (newStatus) => {
-    if (!window.confirm(`Are you sure you want to mark as "${newStatus}"?`)) {
+  const updateStatus = async (action) => {
+    const label = action === "approve" ? "approve" : "reject";
+
+    if (!window.confirm(`Are you sure you want to ${label} this ticket?`)) {
       return;
     }
 
     try {
       setActionLoading(true);
-      await axiosClient.patch(`/api/tickets/${id}`, { status: newStatus });
-      setTicket((prev) => ({ ...prev, status: newStatus }));
+
+      await axiosClient.patch(`/api/ticket/${id}/${action}`);
+
       alert("Status updated!");
+      await loadTicket(); // reload fresh data
     } catch (err) {
-      console.error("Update failed:", err);
-      alert("Failed to update status.");
+      console.error(err.response?.data || err);
+      alert(err.response?.data?.detail || "Update failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+  const deleteTicket = async () => {
+    if (!window.confirm("Are you sure you want to delete this ticket?")) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      await axiosClient.delete(`/api/ticket/${id}`);
+      alert("Ticket deleted!");
+      navigate("/checkermaker");
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert("Failed to delete ticket.");
     } finally {
       setActionLoading(false);
     }
@@ -57,17 +80,6 @@ const TicketCheckerView = () => {
     return (
       <div className="p-10 text-center text-slate-500">
         Loading ticket details...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-10 text-center text-red-500">
-        {error}
-        <button onClick={loadTicket} className="ml-2 underline text-blue-600">
-          Retry
-        </button>
       </div>
     );
   }
@@ -91,21 +103,36 @@ const TicketCheckerView = () => {
         </button>
 
         <div className="flex gap-2">
-          <button
-            onClick={() => updateStatus("Approved")}
-            disabled={actionLoading}
-            className="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-          >
-            <FontAwesomeIcon icon={faCheck} className="mr-1" /> Approve
-          </button>
+          {hasPermission("APPROVE_CHEKER") && (
+            <button
+              onClick={() => updateStatus("approve")}
+              disabled={actionLoading}
+              className="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+            >
+              <FontAwesomeIcon icon={faCheck} className="mr-1" /> Approve
+            </button>
+          )}
 
-          <button
-            onClick={() => updateStatus("Rejected")}
-            disabled={actionLoading}
-            className="px-4 py-2 rounded-xl bg-amber-600 text-white hover:bg-amber-700 text-sm"
-          >
-            <FontAwesomeIcon icon={faXmark} className="mr-1" /> Reject
-          </button>
+          {hasPermission("REJECT_CHEKER") && (
+            <button
+              onClick={() => updateStatus("reject")}
+              disabled={actionLoading}
+              className="px-4 py-2 rounded-xl bg-amber-600 text-white hover:bg-amber-700 text-sm"
+            >
+              <FontAwesomeIcon icon={faXmark} className="mr-1" /> Reject
+            </button>
+          )}
+
+          {/* ✅ FIXED DELETE BUTTON */}
+          {hasPermission("DELETE_CHEKER") && (
+            <button
+              onClick={deleteTicket}
+              disabled={actionLoading}
+              className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 text-sm"
+            >
+              <FontAwesomeIcon icon={faXmark} className="mr-1" /> Delete
+            </button>
+          )}
         </div>
       </div>
 
@@ -148,7 +175,9 @@ const TicketCheckerView = () => {
 
           <div>
             <p className="text-slate-500">Created At</p>
-            <p className="font-medium text-slate-800">{ticket.created_at}</p>
+            <p className="font-medium text-slate-800">
+              {formatDate(ticket.created_at)}
+            </p>
           </div>
         </div>
 
@@ -156,7 +185,7 @@ const TicketCheckerView = () => {
         <div>
           <p className="text-slate-500">Description</p>
           <p className="mt-1 text-slate-700 whitespace-pre-wrap">
-            {ticket.description || "(No description)"}
+            {ticket.description || "No description"}
           </p>
         </div>
       </div>
