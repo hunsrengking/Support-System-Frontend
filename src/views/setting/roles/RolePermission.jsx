@@ -62,8 +62,8 @@ const RolePermission = () => {
         </p>
       </div>
       {/* Permission List */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm max-w-3xl">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {permissions.map((p) => (
             <label
               key={p.id}
@@ -74,7 +74,7 @@ const RolePermission = () => {
                 checked={selected.includes(p.id)}
                 onChange={() => toggleSelect(p.id)}
               />
-              <span className="text-sm">{p.name}</span>
+              <span className="text-sm">{p.name.replace(/_/g, " ")}</span>
             </label>
           ))}
         </div>
@@ -82,7 +82,7 @@ const RolePermission = () => {
         <div className="flex gap-3 mt-5">
           <button
             onClick={saveAssign}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl shadow hover:bg-blue-700 flex items-center gap-2"
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl shadow hover:bg-blue-700"
           >
             Submit
           </button>

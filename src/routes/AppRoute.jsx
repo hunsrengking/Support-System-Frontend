@@ -24,6 +24,8 @@ import DepartmentList from "../views/setting/department/Department";
 import DepartmentCreate from "../views/setting/department/CreateDepartment";
 import Telegram from "../views/setting/configuration/Telegram";
 import DepartmentMember from "../views/setting/department/DepartmentMember";
+import Report from "../views/report/Report";
+import Position from "../views/setting/positions/Positions";
 
 /* ---------- Lazy-loaded pages ---------- */
 const Dashboard = lazy(() => import("../views/dashboard/Dashboard"));
@@ -247,6 +249,22 @@ const AppRoute = () => {
                   element={
                     <RequirePermission perm="UPDATE_PERMISSIONS">
                       <Telegram />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="settings/positions"
+                  element={
+                    <RequirePermission perm="UPDATE_PERMISSIONS">
+                      <Position />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="/reports/summary"
+                  element={
+                    <RequirePermission perm="UPDATE_PERMISSIONS">
+                      <Report />
                     </RequirePermission>
                   }
                 />

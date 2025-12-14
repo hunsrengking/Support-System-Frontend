@@ -53,16 +53,21 @@ const Header = ({ toggleSidebar }) => {
           axiosClient.get("/api/notifications"),
           axiosClient.get("/api/notifications/unread-count"),
         ]);
-        setNotifications(listRes.data || []);
-        setUnreadCount(countRes.data.count || 0);
+        const cleaned = (listRes.data || []).filter(
+          (n) => !isExpiredNotification(n)
+        );
+        setNotifications(cleaned);
+        setUnreadCount(cleaned.filter((n) => !n.is_read).length);
+        // setNotifications(listRes.data || []);
+        // setUnreadCount(countRes.data.count || 0);
       } catch (err) {
         console.error("Notification load error:", err);
       }
     };
 
     load();
-    const iv = setInterval(load, 20000);
-    return () => clearInterval(iv);
+    // const iv = setInterval(load, 20000);
+    // return () => clearInterval(iv);
   }, []);
 
   // ===== LOGOUT CALLBACK =====
@@ -133,6 +138,17 @@ const Header = ({ toggleSidebar }) => {
       setLoggingOut(false);
       navigate("/login", { replace: true });
     }
+  };
+  const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+  const isExpiredNotification = (n) => {
+    const time = n.created_at
+      ? new Date(n.created_at).getTime()
+      : n.createdAt
+      ? new Date(n.createdAt).getTime()
+      : 0;
+
+    return time && Date.now() - time > THREE_DAYS_MS;
   };
 
   return (

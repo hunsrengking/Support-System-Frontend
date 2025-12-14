@@ -8,14 +8,13 @@ import {
   faXmark,
   faTicket,
 } from "@fortawesome/free-solid-svg-icons";
-import Spinner from "../../../components/common/Spinner";
 import { formatDate } from "../../../utils/formatdate";
 
 const TicketChecker = () => {
   const navigate = useNavigate();
 
   const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // KEEP
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,26 +114,9 @@ const TicketChecker = () => {
         axiosClient.delete(`/api/ticket/${id}`)
       );
 
-      const results = await Promise.allSettled(calls);
-
-      const succeeded = [];
-      const failed = [];
-
-      results.forEach((r, idx) => {
-        if (r.status === "fulfilled") succeeded.push(selectedIds[idx]);
-        else failed.push(selectedIds[idx]);
-      });
-
-      if (succeeded.length > 0) {
-        setTickets((prev) => prev.filter((t) => !succeeded.includes(t.id)));
-        setSelectedIds((prev) => prev.filter((id) => !succeeded.includes(id)));
-      }
-
+      await Promise.allSettled(calls);
       await loadTickets();
-
-      if (failed.length > 0) {
-        alert(`Failed to delete ${failed.length} ticket(s).`);
-      }
+      setSelectedIds([]);
     } catch (err) {
       console.error(err);
       alert("Delete error.");
@@ -151,11 +133,9 @@ const TicketChecker = () => {
     }
 
     const isApprove = newStatus === "Approved";
-    const label = isApprove ? "approve" : isReject ? "reject" : "delete";
+    const label = isApprove ? "approve" : "reject";
 
-    if (
-      !window.confirm(`Are you sure you want to ${label} selected tickets?`)
-    ) {
+    if (!window.confirm(`Are you sure you want to ${label} selected tickets?`)) {
       return;
     }
 
@@ -168,33 +148,8 @@ const TicketChecker = () => {
           : axiosClient.patch(`/api/ticket/${id}/reject`, null)
       );
 
-      const results = await Promise.allSettled(calls);
-
-      const succeeded = [];
-      const failed = [];
-
-      results.forEach((r, idx) => {
-        if (r.status === "fulfilled") succeeded.push(selectedIds[idx]);
-        else failed.push(selectedIds[idx]);
-      });
-
-      // optimistic update (your exact requested format)
-      if (succeeded.length > 0) {
-        setTickets((prev) =>
-          prev.map((t) =>
-            succeeded.includes(t.id)
-              ? { ...t, status: isApprove ? "Open" : "Reject" }
-              : t
-          )
-        );
-      }
-
+      await Promise.allSettled(calls);
       await loadTickets();
-
-      if (failed.length > 0) {
-        alert(`Failed to ${label} ${failed.length} ticket(s).`);
-      }
-
       setSelectedIds([]);
     } catch (err) {
       console.error(err);
@@ -223,19 +178,16 @@ const TicketChecker = () => {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative w-full sm:w-72">
-              <input
-                type="text"
-                placeholder="filter ticket..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl
-                  focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none"
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="filter ticket..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-72 pl-3 pr-3 py-2 text-sm border border-slate-200 rounded-xl
+                focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none"
+            />
 
             <div className="flex flex-wrap gap-2">
-              {/* Approve */}
               <button
                 onClick={() => handleBulkStatusChange("Approved")}
                 disabled={actionLoading || selectedIds.length === 0}
@@ -247,15 +199,10 @@ const TicketChecker = () => {
                       : "bg-emerald-600 text-white hover:bg-emerald-700"
                   }`}
               >
-                {actionLoading ? (
-                  <Spinner size={16} className="text-white" />
-                ) : (
-                  <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
-                )}
+                <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
                 Approve
               </button>
 
-              {/* Reject */}
               <button
                 onClick={() => handleBulkStatusChange("Rejected")}
                 disabled={actionLoading || selectedIds.length === 0}
@@ -267,15 +214,10 @@ const TicketChecker = () => {
                       : "bg-amber-500 text-white hover:bg-amber-600"
                   }`}
               >
-                {actionLoading ? (
-                  <Spinner size={16} className="text-white" />
-                ) : (
-                  <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
-                )}
+                <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
                 Reject
               </button>
 
-              {/* Delete */}
               <button
                 onClick={handleBulkDelete}
                 disabled={actionLoading || selectedIds.length === 0}
@@ -287,11 +229,7 @@ const TicketChecker = () => {
                       : "bg-red-600 text-white hover:bg-red-700"
                   }`}
               >
-                {actionLoading ? (
-                  <Spinner size={16} className="text-white" />
-                ) : (
-                  <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                )}
+                <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
                 Delete
               </button>
             </div>
@@ -305,15 +243,7 @@ const TicketChecker = () => {
           <table className="min-w-full text-sm text-left">
             <thead className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wide">
               <tr>
-                <th className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                  />
-                </th>
-
+                <th className="px-4 py-3"></th>
                 <th className="px-4 py-3">ID</th>
                 <th className="px-4 py-3">Subject</th>
                 <th className="px-4 py-3">Category</th>
@@ -325,117 +255,64 @@ const TicketChecker = () => {
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {/* PAGE LOADING */}
-              {loading ? (
+              {error ? (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-10 text-center text-sm text-slate-400"
-                  >
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Spinner size={28} />
-                      <span>Loading tickets...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-sm text-red-500"
-                  >
+                  <td colSpan={8} className="px-4 py-8 text-center text-red-500">
                     {error}
-                    <button
-                      onClick={loadTickets}
-                      className="ml-2 text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Retry
-                    </button>
                   </td>
                 </tr>
               ) : filteredTickets.length > 0 ? (
-                filteredTickets.map((t) => {
-                  const checked = selectedIds.includes(t.id);
-                  return (
-                    <tr
-                      key={t.id}
-                      onClick={() => handleViewTicket(t.id)}
-                      className="hover:bg-slate-50 transition-colors duration-150 cursor-pointer"
+                filteredTickets.map((t) => (
+                  <tr
+                    key={t.id}
+                    onClick={() => handleViewTicket(t.id)}
+                    className="hover:bg-slate-50 cursor-pointer"
+                  >
+                    <td
+                      className="px-4 py-3"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <td
-                        className="px-4 py-3"
-                        onClick={(e) => e.stopPropagation()}
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(t.id)}
+                        onChange={() => toggleSelect(t.id)}
+                      />
+                    </td>
+                    <td className="px-4 py-3">{t.id}</td>
+                    <td className="px-4 py-3">
+                      {t.title || t.subject || "-"}
+                    </td>
+                    <td className="px-4 py-3">{t.category || "-"}</td>
+                    <td className="px-4 py-3">{t.priority || "-"}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusBadgeClasses(
+                          t.status
+                        )}`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleSelect(t.id)}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                        />
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-700 font-medium">
-                        {t.id}
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-800">
-                        {t.title || t.subject || "-"}
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-700">
-                        {t.category || "-"}
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-700">
-                        {t.priority || "-"}
-                      </td>
-
-                      <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusBadgeClasses(
+                          className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusDotClasses(
                             t.status
                           )}`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusDotClasses(
-                              t.status
-                            )}`}
-                          />
-                          {t.status}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-700">
-                        {t.created_by || "-"}
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-600">
-                        {formatDate(t.created_at || "-")}
-                      </td>
-                    </tr>
-                  );
-                })
+                        />
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{t.created_by || "-"}</td>
+                    <td className="px-4 py-3">
+                      {formatDate(t.created_at || "-")}
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-sm text-slate-400"
-                  >
-                    {searchTerm
-                      ? "No tickets match your search."
-                      : "No tickets waiting for approval."}
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                    No tickets waiting for approval.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-
-        <div className="px-4 py-3 text-xs text-slate-500 bg-slate-50 flex justify-between">
-          <span>
-            Showing {filteredTickets.length} of {tickets.length} tickets
-          </span>
-          <span className="text-slate-400">Page 1 of 1</span>
         </div>
       </div>
     </div>

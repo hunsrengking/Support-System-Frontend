@@ -230,19 +230,21 @@ const ViewTicket = () => {
       status_name: form.status_name,
       start_date: toISO(form.start_date),
       end_date: toISO(form.end_date),
-      assigned_to: form.assigned_to ? form.assigned_to : null,
+      assigned_to_id: form.assigned_to ? Number(form.assigned_to) : null,
       priority_id: form.priority_id ? form.priority_id : null,
       priority_name: selectedPriority
         ? selectedPriority.name ?? selectedPriority.label
         : undefined,
     };
+
     Object.keys(payload).forEach((k) => {
       if (
         payload[k] === null ||
         payload[k] === undefined ||
         (typeof payload[k] === "string" && payload[k].trim() === "")
-      )
+      ) {
         delete payload[k];
+      }
     });
 
     try {
@@ -252,14 +254,15 @@ const ViewTicket = () => {
       setEditing(false);
     } catch (err) {
       console.error("Error saving ticket:", err);
-      const msg =
+      setError(
         err?.response?.data?.detail ??
-        "Failed to save changes. Please try again.";
-      setError(msg);
+          "Failed to save changes. Please try again."
+      );
     } finally {
       setSaving(false);
     }
   };
+
   const mapStatusToId = (statusName, ticketData) => {
     if (!statusName) return undefined;
     if (Array.isArray(statuses) && statuses.length > 0) {
