@@ -1,10 +1,11 @@
 // src/views/settings/users/Users.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axiosClient from "../../services/axiosClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faSearch, faTicket } from "@fortawesome/free-solid-svg-icons";
 import { formatDate } from "../../utils/formatdate";
+import { useError } from "../../context/ErrorContext";
 
 const PAGE_SIZE = 15;
 
@@ -16,6 +17,8 @@ const Ticket = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
+  const location = useLocation();
+  const { showSuccess } = useError();
 
   const loadTickets = useCallback(async () => {
     try {
@@ -35,6 +38,11 @@ const Ticket = () => {
 
   useEffect(() => {
     loadTickets();
+    if (location.state?.success) {
+      showSuccess(location.state.success);
+      window.history.replaceState({}, document.title);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadTickets]);
 
   const handleAddTicket = () => navigate("/ticket/create");
@@ -158,13 +166,19 @@ const Ticket = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
+                  <td
+                    colSpan={9}
+                    className="px-4 py-8 text-center text-slate-400"
+                  >
                     Loading tickets...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-red-500">
+                  <td
+                    colSpan={9}
+                    className="px-4 py-8 text-center text-red-500"
+                  >
                     {error}
                   </td>
                 </tr>
@@ -201,7 +215,10 @@ const Ticket = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-slate-400">
+                  <td
+                    colSpan={9}
+                    className="px-4 py-8 text-center text-slate-400"
+                  >
                     No tickets found.
                   </td>
                 </tr>
@@ -213,7 +230,8 @@ const Ticket = () => {
         {/* ✅ PAGINATION UI */}
         <div className="px-4 py-3 bg-slate-50 flex justify-between items-center text-sm">
           <span className="text-slate-500">
-            Showing {paginatedTickets.length} of {filteredTickets.length} tickets
+            Showing {paginatedTickets.length} of {filteredTickets.length}{" "}
+            tickets
           </span>
 
           <div className="flex gap-2">
