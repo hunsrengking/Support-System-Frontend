@@ -1,10 +1,15 @@
 let showError = () => {};
+let showSuccess = () => {};
 
 export const errorService = {
-  register(fn) {
-    showError = fn;
+  register(errorFn, successFn) {
+    showError = errorFn;
+    showSuccess = successFn;
   },
-  show(message) {
+  error(message) {
     showError(message);
+  },
+  success(message) {
+    showSuccess(message);
   },
 };

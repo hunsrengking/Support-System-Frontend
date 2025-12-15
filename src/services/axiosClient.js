@@ -143,9 +143,9 @@ axiosClient.interceptors.response.use(
           (typeof data === "string" ? data : null) ||
           "Something went wrong. Please try again.";
 
-        errorService.show(message);
+        errorService.error(message);
       } else {
-        errorService.show("Network error. Please check your connection.");
+        errorService.error("Network error. Please check your connection.");
       }
 
       return Promise.reject(error);

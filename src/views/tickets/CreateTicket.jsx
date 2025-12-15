@@ -258,8 +258,9 @@ const CreateTicket = () => {
       };
 
       await axiosClient.post("/api/ticket", payload);
-
-      navigate("/ticket");
+      navigate("/ticket", {
+        state: { success: "Ticket created successfully" },
+      });
     } catch (err) {
       console.error("Create ticket error:", err);
     } finally {
