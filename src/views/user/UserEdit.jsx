@@ -14,6 +14,7 @@ const UserEdit = () => {
     password: "",
     role_id: "",
     department_id: "",
+    staff_id: "",
   });
 
   useEffect(() => {
@@ -25,6 +26,7 @@ const UserEdit = () => {
         password : res.data.password,
         role_id: res.data.role_id,
         department_id: res.data.department_id,
+        staff_id: res.data.staff_id ?? "",
       });
     };
     loadUser();

@@ -26,6 +26,10 @@ import Telegram from "../views/setting/configuration/Telegram";
 import DepartmentMember from "../views/setting/department/DepartmentMember";
 import Report from "../views/report/Report";
 import Position from "../views/setting/positions/Positions";
+import Staff from "../views/setting/staff/Staff";
+import StaffCreate from "../views/setting/staff/StaffCreate";
+import StaffEdit from "../views/setting/staff/StaffEdit";
+import ViewStaff from "../views/setting/staff/ViewStaff";
 
 /* ---------- Lazy-loaded pages ---------- */
 const Dashboard = lazy(() => import("../views/dashboard/Dashboard"));
@@ -268,7 +272,38 @@ const AppRoute = () => {
                     </RequirePermission>
                   }
                 />
-
+                <Route
+                  path="/settings/employees"
+                  element={
+                    <RequirePermission perm="VIEW_SETTING">
+                      <Staff />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="/settings/employees/create"
+                  element={
+                    <RequirePermission perm="VIEW_SETTING">
+                      <StaffCreate />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="/settings/employees/:id/edit"
+                  element={
+                    <RequirePermission perm="VIEW_SETTING">
+                      <StaffEdit />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="/settings/employees/:id/view"
+                  element={
+                    <RequirePermission perm="VIEW_SETTING">
+                      <ViewStaff />
+                    </RequirePermission>
+                  }
+                />
                 <Route path="*" element={<div>404 Not Found</div>} />
               </Route>
             </Routes>

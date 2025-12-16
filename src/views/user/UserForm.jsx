@@ -11,9 +11,11 @@ const UserForm = ({
 }) => {
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [staffs, setStaffs] = useState([]);
   const [loading, setLoading] = useState({
     roles: true,
     departments: true,
+    staffs: true,
   });
 
   const handleChange = (e) => {
@@ -42,10 +44,18 @@ const UserForm = ({
       setLoading((prev) => ({ ...prev, departments: false }));
     }
   };
-
+  const loadStaffs = async () => {
+    try {
+      const res = await axiosClient.get("/api/staff");
+      setStaffs(res.data || []);
+    } catch (err) {
+      console.error("Error loading staff:", err);
+    }
+  };
   useEffect(() => {
     loadRoles();
     loadDepartments();
+    loadStaffs();
   }, []);
 
   const isLoading = loading.roles || loading.departments;
@@ -66,7 +76,8 @@ const UserForm = ({
           value={formData.username || ""}
           onChange={handleChange}
           required
-          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+             focus:ring-2 focus:ring-blue-400"
           placeholder="Username"
         />
       </div>
@@ -82,7 +93,8 @@ const UserForm = ({
           value={formData.email || ""}
           onChange={handleChange}
           required
-          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+             focus:ring-2 focus:ring-blue-400"
           placeholder="user@mail.com"
         />
       </div>
@@ -97,7 +109,8 @@ const UserForm = ({
           value={formData.role_id || ""}
           onChange={handleChange}
           required
-          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+             focus:ring-2 focus:ring-blue-400"
           disabled={loading.roles}
         >
           <option value="">Select role</option>
@@ -111,6 +124,27 @@ const UserForm = ({
           <p className="text-xs text-slate-500 mt-1">Loading roles...</p>
         )}
       </div>
+      {/* Staff select (REQUIRED) */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <label className="text-sm text-slate-600 sm:w-32">
+          Staff <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="staff_id"
+          value={formData.staff_id || ""}
+          onChange={handleChange}
+          required
+          className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+               focus:ring-2 focus:ring-blue-400"
+        >
+          <option value="">Select staff</option>
+          {staffs.map((staff) => (
+            <option key={staff.id} value={staff.id}>
+              {staff.display_name || `${staff.firstname} ${staff.lastname}`}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Department select */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -122,7 +156,8 @@ const UserForm = ({
           value={formData.department_id || ""}
           onChange={handleChange}
           required
-          className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+          className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+             focus:ring-2 focus:ring-blue-400"
           disabled={loading.departments}
         >
           <option value="">Select department</option>
@@ -152,7 +187,8 @@ const UserForm = ({
               value={formData.password || ""}
               onChange={handleChange}
               required
-              className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+              className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+             focus:ring-2 focus:ring-blue-400"
               placeholder="Enter password"
             />
           </div>
@@ -167,7 +203,8 @@ const UserForm = ({
               value={formData.password_confirmation || ""}
               onChange={handleChange}
               required
-              className="flex-1 border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400"
+              className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+             focus:ring-2 focus:ring-blue-400"
               placeholder="Confirm password"
             />
           </div>
@@ -181,7 +218,7 @@ const UserForm = ({
           disabled={isLoading}
           className="bg-blue-600 text-white px-4 py-2 rounded-xl shadow hover:bg-blue-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isEdit ? "Update User" : "Create User"}
+          {isEdit ? "Update" : "Create"}
         </button>
         <button
           type="button"

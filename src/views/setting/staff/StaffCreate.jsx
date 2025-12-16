@@ -1,30 +1,32 @@
-// src/views/settings/users/UserCreate.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosClient from "../../services/axiosClient";
-import UserForm from "./UserForm";
+import StaffForm from "./StaffForm";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import { faUserTie } from "@fortawesome/free-solid-svg-icons";
+import axiosClient from "../../../services/axiosClient";
 
-const UserCreate = () => {
+const StaffCreate = () => {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    role_id: "",
-    department_id: "",
-    staff_id: "",
+    external_id: "",
+    firstname: "",
+    lastname: "",
+    display_name: "",
+    mobile_no: "",
+    join_on_date: "",
+    position_id: "",
+    is_active: true,
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      await axiosClient.post("/api/users", formData);
-      navigate("/users");
+      await axiosClient.post("/api/staff", formData);
+      navigate("/settings/employees");
     } catch (err) {
-      console.error(err);
+      console.error("Create staff error:", err);
     }
   };
 
@@ -33,23 +35,23 @@ const UserCreate = () => {
       {/* Header */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
         <h1 className="text-2xl font-semibold flex items-center gap-2 text-slate-900">
-          <FontAwesomeIcon icon={faUserPlus} />
-          Create User
+          <FontAwesomeIcon icon={faUserTie} />
+          Create Staff
         </h1>
         <p className="text-sm text-slate-500">
-          Add a new user with login credentials.
+          Add a new staff member and assign position.
         </p>
       </div>
 
-      <UserForm
+      <StaffForm
         isEdit={false}
         formData={formData}
         onChange={setFormData}
         onSubmit={handleSubmit}
-        onCancel={() => navigate("/users")}
+        onCancel={() => navigate("/settings/employees")}
       />
     </div>
   );
 };
 
-export default UserCreate;
+export default StaffCreate;

@@ -26,7 +26,7 @@ const Position = () => {
   const fetchPositions = async () => {
     try {
       setLoadingList(true);
-      const res = await axiosClient.get("/api/positions");
+      const res = await axiosClient.get("api/positions");
       setPositions(res.data || []);
     } catch (err) {
       console.error(err);
