@@ -10,13 +10,16 @@ import {
   faSave,
   faTimes,
   faTicketAlt,
+  faDownload,
 } from "@fortawesome/free-solid-svg-icons";
 import { formatDate } from "../../utils/formatdate";
+import { Download } from "lucide-react";
 
 const ViewTicket = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
   // ticket + ui state
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -649,49 +652,105 @@ const ViewTicket = () => {
               </div>
             </div>
 
-            {/* Items / Attachments (supports multiple images/files) */}
-            {Array.isArray(ticket.items) && ticket.items.length > 0 && (
-              <div>
-                <p className="text-slate-500 text-xs uppercase tracking-wide mb-2">
+            {/* Items / Attachments */}
+            {Array.isArray(ticket?.items) && ticket.items.length > 0 && (
+              <div className="mt-6">
+                <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-3">
                   Attachments
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {ticket.items.map((it, idx) => (
-                    <div
-                      key={
-                        it.id ??
-                        `${it.image_path ?? ""}-${it.file_path ?? ""}-${idx}`
-                      }
-                      className="flex items-start gap-3"
-                    >
-                      {it.image_path ? (
-                        <img
-                          src={it.image_path}
-                          alt={it.description ?? `attachment-${idx + 1}`}
-                          className="w-24 h-16 object-cover rounded-md border"
-                        />
-                      ) : (
-                        <div className="w-24 h-16 flex items-center justify-center rounded-md border text-xs text-slate-400">
-                          No image
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {ticket.items.map((it, idx) => {
+                    const imagePath = it.image_path
+                      ? it.image_path.replace("app/", "")
+                      : null;
+
+                    const filePath = it.file_path
+                      ? it.file_path.replace("app/", "")
+                      : null;
+
+                    const imageUrl = imagePath
+                      ? `${API_BASE_URL}/${imagePath}`
+                      : null;
+
+                    const fileName = filePath
+                      ? filePath.split("/").pop()
+                      : null;
+
+                    return (
+                      <div
+                        key={it.id ?? idx}
+                        className="flex items-center justify-between gap-6
+                       p-4 rounded-xl bg-white
+                        hover:shadow-md transition"
+                      >
+                        {/* LEFT SIDE: IMAGE + DOWNLOAD IMAGE */}
+                        <div className="flex items-center gap-3">
+                          {/* IMAGE */}
+                          <div className="w-24 h-16 flex items-center justify-center">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={it.description ?? "attachment"}
+                                className="max-w-full max-h-full object-cover rounded-lg border"
+                              />
+                            ) : (
+                              <div
+                                className="w-full h-full flex items-center justify-center
+                                  rounded-lg bg-slate-100 text-slate-400 text-xs"
+                              >
+                                NO IMAGE
+                              </div>
+                            )}
+                          </div>
+
+                          {/* DOWNLOAD IMAGE */}
+                          {imagePath && (
+                            <a
+                              href={`${API_BASE_URL}/api/ticket/file/download?path=${it.image_path}`}
+                              className="px-3 py-1.5 text-xs font-medium text-emerald-700
+                             bg-emerald-50 border border-emerald-200 rounded-lg
+                             hover:bg-emerald-100 transition whitespace-nowrap"
+                            >
+                              Image
+                              <FontAwesomeIcon icon={faDownload} />
+                            </a>
+                          )}
                         </div>
-                      )}
-                      <div className="flex-1">
-                        <p className="text-sm text-slate-800">
-                          {it.description ?? `Attachment ${idx + 1}`}
-                        </p>
-                        {it.file_path && (
-                          <a
-                            href={it.file_path}
-                            className="text-xs text-blue-600 hover:underline"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Open file
-                          </a>
-                        )}
+
+                        {/* RIGHT SIDE: FILE INFO + DOWNLOAD FILE */}
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* FILE INFO */}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">
+                              {fileName ??
+                                it.description ??
+                                `Attachment ${idx + 1}`}
+                            </p>
+
+                            {it.description && (
+                              <p className="text-xs text-slate-500 truncate">
+                                {it.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* DOWNLOAD FILE */}
+                          {filePath && (
+                            <a
+                              href={`${API_BASE_URL}/api/ticket/file/download?path=${it.file_path}`}
+                              className="px-3 py-1.5 text-xs font-medium text-blue-700
+                             bg-blue-50 border border-blue-200 rounded-lg
+                             hover:bg-blue-100 transition whitespace-nowrap"
+                            >
+                              File
+                              <FontAwesomeIcon icon={faDownload} />
+                            </a>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

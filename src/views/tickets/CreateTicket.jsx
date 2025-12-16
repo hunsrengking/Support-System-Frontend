@@ -219,29 +219,44 @@ const CreateTicket = () => {
       return { ...prev, attachments };
     });
   };
+  const uploadTicketImage = async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
 
+    const res = await axiosClient.post("/api/ticket/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    return res.data.image_path;
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      const items = [];
+      let items = [];
 
-      if (form.images && form.images.length > 0) {
-        form.images.forEach((img) => {
-          items.push({
-            image_path: img.name,
-            description: "Image attachment",
-          });
+      // upload image first
+      if (form.images?.length > 0) {
+        const imagePath = await uploadTicketImage(form.images[0]);
+        items.push({
+          image_path: imagePath,
+          description: "Image attachment",
         });
       }
 
-      if (form.attachments && form.attachments.length > 0) {
-        form.attachments.forEach((file) => {
-          items.push({
-            file_path: file.name,
-            description: "File attachment",
-          });
+      // upload file first
+      if (form.attachments?.length > 0) {
+        const formData = new FormData();
+        formData.append("file", form.attachments[0]);
+
+        const res = await axiosClient.post("/api/ticket/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        items.push({
+          file_path: res.data.file_path,
+          description: "File attachment",
         });
       }
 
@@ -258,15 +273,17 @@ const CreateTicket = () => {
       };
 
       await axiosClient.post("/api/ticket", payload);
+
       navigate("/ticket", {
         state: { success: "Ticket created successfully" },
       });
     } catch (err) {
-      console.error("Create ticket error:", err);
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
   };
+
   return (
     <div className="space-y-5">
       {/* Header */}
