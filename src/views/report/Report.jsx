@@ -9,6 +9,7 @@ import {
   faFilter,
   faSearch,
 } from "@fortawesome/free-solid-svg-icons";
+import { formatDate } from "../../utils/formatdate";
 
 const Report = () => {
   const [reports, setReports] = useState([]);
@@ -113,8 +114,8 @@ const Report = () => {
           >
             <option value="">All</option>
             <option value="open">Open</option>
-            <option value="in_progress">In Progress</option>
-            <option value="closed">Closed</option>
+            <option value="Doing">Doing</option>
+            <option value="close">Closed</option>
           </select>
         </div>
 
@@ -143,9 +144,12 @@ const Report = () => {
             <thead className="bg-gray-50 text-gray-600">
               <tr>
                 <th className="px-4 py-3 text-left">#</th>
-                <th className="px-4 py-3 text-left">Ticket</th>
+                <th className="px-4 py-3 text-left">Title</th>
                 <th className="px-4 py-3 text-left">Department</th>
+                <th className="px-4 py-3 text-left">Category</th>
+                <th className="px-4 py-3 text-left">Priority</th>
                 <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Assigned To</th>
                 <th className="px-4 py-3 text-left">Created At</th>
               </tr>
             </thead>
@@ -153,10 +157,23 @@ const Report = () => {
               {reports.map((r, index) => (
                 <tr key={r.id} className="border-t hover:bg-gray-50 transition">
                   <td className="px-4 py-3">{index + 1}</td>
-                  <td className="px-4 py-3">{r.ticket_code}</td>
-                  <td className="px-4 py-3">{r.department_name}</td>
+
+                  <td className="px-4 py-3">{r.title}</td>
+
+                  <td className="px-4 py-3">{r.department ?? "-"}</td>
+
+                  <td className="px-4 py-3">{r.category}</td>
+
+                  <td className="px-4 py-3">{r.priority}</td>
+
                   <td className="px-4 py-3 capitalize">{r.status}</td>
-                  <td className="px-4 py-3">{r.created_at}</td>
+
+                  <td className="px-4 py-3">{r.assigned_to}</td>
+
+                  <td className="px-4 py-3">
+                    {formatDate(r.create_date)}
+                    {/* {new Date(r.create_date).toLocaleString()} */}
+                  </td>
                 </tr>
               ))}
             </tbody>

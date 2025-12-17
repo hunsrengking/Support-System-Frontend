@@ -50,6 +50,7 @@ const TicketCheckerView = () => {
       await axiosClient.patch(`/api/ticket/${id}/${action}`);
 
       alert("Status updated!");
+      navigate("/checkermaker");
       await loadTicket(); // reload fresh data
     } catch (err) {
       console.error(err.response?.data || err);
