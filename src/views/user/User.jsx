@@ -55,7 +55,7 @@ const Users = () => {
       setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch (err) {
       console.error("Error deleting user:", err);
-      alert("Failed to delete user.");
+      // alert("Failed to delete user.");
     }
   };
 

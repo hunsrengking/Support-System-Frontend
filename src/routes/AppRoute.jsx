@@ -224,7 +224,7 @@ const AppRoute = () => {
                 <Route
                   path="/settings/departments"
                   element={
-                    <RequirePermission perm="UPDATE_PERMISSIONS">
+                    <RequirePermission perm="VIEW_DEPARTMENT">
                       <DepartmentList />
                     </RequirePermission>
                   }
@@ -233,7 +233,7 @@ const AppRoute = () => {
                 <Route
                   path="/settings/department/create"
                   element={
-                    <RequirePermission perm="UPDATE_PERMISSIONS">
+                    <RequirePermission perm="CREATE_DEPARTMENT">
                       <DepartmentCreate />
                     </RequirePermission>
                   }
@@ -242,7 +242,7 @@ const AppRoute = () => {
                 <Route
                   path="/settings/department/:id/members"
                   element={
-                    <RequirePermission perm="UPDATE_PERMISSIONS">
+                    <RequirePermission perm="VIEW_DEPARTMENT">
                       <DepartmentMember />
                     </RequirePermission>
                   }

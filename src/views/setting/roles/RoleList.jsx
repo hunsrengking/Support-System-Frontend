@@ -9,6 +9,7 @@ import {
   faKey,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
+import { hasPermission } from "../../../utils/permission";
 
 const RoleList = () => {
   const navigate = useNavigate();
@@ -57,14 +58,15 @@ const RoleList = () => {
             Manage all roles and assign permissions.
           </p>
         </div>
-
-        <Link
-          to="/settings/roles/create"
-          className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm px-4 py-2 rounded-xl shadow hover:bg-blue-700"
-        >
-          <FontAwesomeIcon icon={faPlus} />
-          Create Role
-        </Link>
+        {hasPermission("CREATE_ROLES") && (
+          <Link
+            to="/settings/roles/create"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm px-4 py-2 rounded-xl shadow hover:bg-blue-700"
+          >
+            <FontAwesomeIcon icon={faPlus} />
+            Create Role
+          </Link>
+        )}
       </div>
 
       {/* Roles Table */}
@@ -97,25 +99,28 @@ const RoleList = () => {
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate(`/settings/roles/${role.id}/permissions`)
-                          }
-                          className="text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center gap-1"
-                        >
-                          <FontAwesomeIcon icon={faKey} />
-                          Permissions
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDisable(role.id)}
-                          className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                          Disable
-                        </button>
+                        {hasPermission("UPDATE_PERMISSIONS") && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/settings/roles/${role.id}/permissions`)
+                            }
+                            className="text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center gap-1"
+                          >
+                            <FontAwesomeIcon icon={faKey} />
+                            Permissions
+                          </button>
+                        )}
+                        {hasPermission("DISABLE_ROLES") && (
+                          <button
+                            type="button"
+                            onClick={() => handleDisable(role.id)}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                            Disable
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
