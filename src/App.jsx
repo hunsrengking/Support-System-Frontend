@@ -10,6 +10,7 @@ function App() {
     <ErrorProvider>
       <LoadingProvider>
         <ErrorAlert />
+        <SuccessAlert/>
         <AppRoute />
       </LoadingProvider>
     </ErrorProvider>

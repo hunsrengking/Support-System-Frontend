@@ -14,6 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { formatDate } from "../../utils/formatdate";
 import { Download } from "lucide-react";
+import { useError } from "../../context/ErrorContext";
 
 const ViewTicket = () => {
   const { id } = useParams();
@@ -24,7 +25,7 @@ const ViewTicket = () => {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const { showSuccess } = useError();
   // editing form
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -256,6 +257,7 @@ const ViewTicket = () => {
       await axiosClient.patch(`/api/ticket/${id}`, payload);
       await loadTicket();
       setEditing(false);
+      showSuccess("Ticket updated successfully");
     } catch (err) {
       console.error("Error saving ticket:", err);
       setError(
