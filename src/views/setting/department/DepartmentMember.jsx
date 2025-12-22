@@ -53,7 +53,7 @@ const DepartmentMember = () => {
   const loadAllUsers = async () => {
     setLoadingUsers(true);
     try {
-      const res = await axiosClient.get("/api/users");
+      const res = await axiosClient.get("/api/users/without/departmemt");
       setAllUsers(res.data || []);
     } catch (err) {
       console.error(err);
@@ -94,7 +94,7 @@ const DepartmentMember = () => {
   const handleAddMember = async (e) => {
     e.preventDefault();
     try {
-      await axiosClient.post(`/api/department/${id}/members`, {
+      await axiosClient.post(`/api/department/${id}/members/add`, {
         userId: selectedUserId,
       });
       setIsAddOpen(false);
@@ -109,7 +109,7 @@ const DepartmentMember = () => {
   const handleRemove = async (userId, name) => {
     if (!window.confirm(`Remove ${name}?`)) return;
     try {
-      await axiosClient.delete(`/api/department/${id}/members/${userId}`);
+      await axiosClient.delete(`/api/department/${id}/members/${userId}remove`);
       setMembers((prev) => prev.filter((m) => m.id !== userId));
     } catch (err) {
       console.error(err);
