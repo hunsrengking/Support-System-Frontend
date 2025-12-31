@@ -20,8 +20,16 @@ const UserCreate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Convert empty strings to null for backend
+    const payload = {
+      ...formData,
+      role_id: formData.role_id ? Number(formData.role_id) : null,
+      department_id: formData.department_id ? Number(formData.department_id) : null,
+      staff_id: formData.staff_id ? Number(formData.staff_id) : null,
+    };
+
     try {
-      await axiosClient.post("/api/users", formData);
+      await axiosClient.post("/api/users", payload);
       navigate("/users");
     } catch (err) {
       console.error(err);

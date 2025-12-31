@@ -267,7 +267,7 @@ const AppRoute = () => {
                 <Route
                   path="/reports/summary"
                   element={
-                    <RequirePermission perm="UPDATE_PERMISSIONS">
+                    <RequirePermission perm="VIEW_REPORTS">
                       <Report />
                     </RequirePermission>
                   }

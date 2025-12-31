@@ -17,6 +17,7 @@ const UserForm = ({
     departments: true,
     staffs: true,
   });
+  const [isStaff, setIsStaff] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,14 +45,18 @@ const UserForm = ({
       setLoading((prev) => ({ ...prev, departments: false }));
     }
   };
+
   const loadStaffs = async () => {
     try {
       const res = await axiosClient.get("/api/staff");
       setStaffs(res.data || []);
     } catch (err) {
       console.error("Error loading staff:", err);
+    } finally {
+      setLoading((prev) => ({ ...prev, staffs: false }));
     }
   };
+
   useEffect(() => {
     loadRoles();
     loadDepartments();
@@ -124,54 +129,74 @@ const UserForm = ({
           <p className="text-xs text-slate-500 mt-1">Loading roles...</p>
         )}
       </div>
-      {/* Staff select (REQUIRED) */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <label className="text-sm text-slate-600 sm:w-32">
-          Staff <span className="text-red-500">*</span>
+
+      {/* Is Staff Checkbox */}
+      <div className="flex items-center gap-2 mt-2">
+        <input
+          type="checkbox"
+          checked={isStaff}
+          onChange={(e) => {
+            setIsStaff(e.target.checked);
+            if (!e.target.checked) {
+              // Clear staff and department when unchecked
+              onChange({ ...formData, staff_id: "", department_id: "" });
+            }
+          }}
+          id="isStaff"
+        />
+        <label htmlFor="isStaff" className="text-sm text-slate-600">
+          Is Staff
         </label>
-        <select
-          name="staff_id"
-          value={formData.staff_id || ""}
-          onChange={handleChange}
-          required
-          className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
-               focus:ring-2 focus:ring-blue-400"
-        >
-          <option value="">Select staff</option>
-          {staffs.map((staff) => (
-            <option key={staff.id} value={staff.id}>
-              {staff.display_name || `${staff.firstname} ${staff.lastname}`}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {/* Department select */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <label className="text-sm text-slate-600 sm:w-32">
-          Department <span className="text-red-500">*</span>
-        </label>
-        <select
-          name="department_id"
-          value={formData.department_id || ""}
-          onChange={handleChange}
-          required
-          className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+      {/* Staff and Department selects (only show if isStaff is true) */}
+      {isStaff && (
+        <>
+          {/* Staff select */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+            <label className="text-sm text-slate-600 sm:w-32">
+              Staff <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="staff_id"
+              value={formData.staff_id || ""}
+              onChange={handleChange}
+              required={isStaff}
+              className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
+               focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">Select staff</option>
+              {staffs.map((staff) => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.display_name || `${staff.firstname} ${staff.lastname}`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Department select */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+            <label className="text-sm text-slate-600 sm:w-32">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="department_id"
+              value={formData.department_id || ""}
+              onChange={handleChange}
+              required={isStaff}
+              className="w-full sm:max-w-md border rounded-xl p-2.5 text-sm
              focus:ring-2 focus:ring-blue-400"
-          disabled={loading.departments}
-        >
-          <option value="">Select department</option>
-          {departments.map((department) => (
-            <option key={department.id} value={department.id}>
-              {department.name ||
-                department.department_name ||
-                department.title}
-            </option>
-          ))}
-        </select>
-      </div>
-      {loading.departments && (
-        <p className="text-xs text-slate-500 mt-1">Loading departments...</p>
+              disabled={loading.departments}
+            >
+              <option value="">Select department</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name || department.department_name || department.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
       )}
 
       {/* Password fields only when create */}

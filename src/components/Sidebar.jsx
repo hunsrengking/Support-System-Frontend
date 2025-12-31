@@ -96,25 +96,7 @@ const Sidebar = ({ sidebarOpen }) => {
                   to="/reports/summary"
                   className="block px-2 py-1 rounded hover:bg-slate-100 text-sm"
                 >
-                  Ticket Summary
-                </Link>
-                <Link
-                  to="/reports/by-department"
-                  className="block px-2 py-1 rounded hover:bg-slate-100 text-sm"
-                >
-                  By Department
-                </Link>
-                <Link
-                  to="/reports/by-status"
-                  className="block px-2 py-1 rounded hover:bg-slate-100 text-sm"
-                >
-                  By Status
-                </Link>
-                <Link
-                  to="/reports/by-user"
-                  className="block px-2 py-1 rounded hover:bg-slate-100 text-sm"
-                >
-                  By User
+                  Ticket
                 </Link>
               </div>
             )}

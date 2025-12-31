@@ -35,8 +35,14 @@ const UserEdit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const payload = {
+      ...formData,
+      role_id: formData.role_id ? Number(formData.role_id) : null,
+      department_id: formData.department_id ? Number(formData.department_id) : null,
+      staff_id: formData.staff_id ? Number(formData.staff_id) : null,
+    };
     try {
-      await axiosClient.put(`/api/users/${id}`, formData);
+      await axiosClient.put(`/api/users/${id}`, payload);
       navigate("/users");
     } catch (err) {
       console.error(err);
